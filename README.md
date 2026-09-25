@@ -10,7 +10,7 @@
 
 <br />
 
-**A monochrome, dimensional UI runtime for Roblox.**
+**A monochrome UI runtime with a black-hole-inspired sense of depth.**
 
 <br />
 
@@ -24,7 +24,7 @@
 
 <br />
 
-> **Nebula LIB** gives Roblox developers a composed UI foundation: responsive surfaces, shared motion, observable state, flexible rendering roots, and cleanup that does not get forgotten.
+> **Nebula LIB** gives Roblox developers a composed UI foundation: responsive surfaces, shared motion, observable state, flexible rendering roots, and cleanup that does not get forgotten. Its visual language borrows from orbital paths and event horizons; every metaphor points back to a real runtime feature.
 
 <div align="center">
 
@@ -112,8 +112,11 @@ The sections below are interactive. Open a category to see the complete shipped 
 - [x] Fade transitions
 - [x] Scale transitions
 - [x] Spring transitions
+- [x] Slide and rotation helpers
+- [x] Staggered multi-instance transitions
 - [x] Generic property tweening
-- [x] `surfaceIn`, `control`, `spring`, and `quick` presets
+- [x] `surfaceIn`, `control`, `spring`, `quick`, `reveal`, and `orbit` presets
+- [x] Animated window entrance, tab reveal, and button hover response
 - [x] Active-animation tracking
 - [x] Existing tweens cancel before a replacement starts
 - [x] Reduced-motion mode applies state immediately
@@ -148,7 +151,7 @@ The sections below are interactive. Open a category to see the complete shipped 
 
 ## ⌁ Quick start
 
-Copy the `src/` tree into your Roblox project as a ModuleScript hierarchy, or sync it with Rojo. Then require `src/Nebula.lua` from a `LocalScript`.
+`src/Nebula.lua` is the generated, self-contained entry point. Copy that single file into a ModuleScript named `Nebula`, or use the loadstring form below in a compatible runtime you control. The original modules remain under `src/`; rebuild the bundle after changing them with `node tools/build-bundle.mjs`.
 
 ```lua
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -214,7 +217,59 @@ app.Commands:Open()
 
 ---
 
-## ◐ Theme it
+<details>
+<summary><strong>◉ Enter through the event horizon — loadstring</strong></summary>
+
+Use this only in a trusted, compatible runtime that intentionally provides both `game:HttpGet` and `loadstring`. The standard Roblox client does not enable this pattern for ordinary LocalScripts.
+
+```lua
+local Nebula = loadstring(game:HttpGet("https://raw.githubusercontent.com/famefashion/nebula-lib/main/src/Nebula.lua"))()
+
+local app = Nebula.new({
+    Theme = "Nebula Dark",
+    RenderMode = "2D",
+})
+```
+
+For a full runtime check, paste [`examples/LoadstringSmokeTest.lua`](examples/LoadstringSmokeTest.lua) into your controlled executor. It checks the loader, documented runtime methods, controls, commands, themes, rendering mode, and animations. If a check fails, it prints the traceback and attempts to copy it with `setclipboard` or `toclipboard`.
+
+Remote code executes with the permissions of its host. Review the source and pin a release tag or commit SHA for anything you expect to keep stable; the `main` URL intentionally follows the latest commit.
+
+</details>
+
+## ◉ Orbit map
+
+Open a node to jump from the visual model to the matching API. “Orbit” and “event horizon” are labels for actual UI behavior, not separate dependencies.
+
+<details>
+<summary><strong>Core orbit</strong> — runtime, themes, and diagnostics</summary>
+
+- [Runtime and theme methods](docs/api.md#runtime-methods)
+- [Responsive rendering roots](docs/rendering.md)
+- [Theme tokens and presets](docs/themes.md)
+
+</details>
+
+<details>
+<summary><strong>Control orbit</strong> — windows, tabs, surfaces, and input</summary>
+
+- [Window, tab, and control API](docs/components.md)
+- [State and input behavior](docs/state.md)
+- [Command palette and toast stack](docs/components.md#command-palette)
+
+</details>
+
+<details>
+<summary><strong>Motion orbit</strong> — reveal, spring, slide, rotate, and stagger</summary>
+
+- [Animation API and examples](docs/animations.md)
+- [Single-file loadstring smoke test](examples/LoadstringSmokeTest.lua)
+
+</details>
+
+---
+
+## ◐ Theme the event horizon
 
 Nebula LIB ships monochrome-ready, but every surface reads from shared tokens:
 
@@ -254,16 +309,21 @@ app:SetRenderMode("Hybrid", {
 
 ---
 
-## ∿ Motion without the mess
+## ∿ Motion around the black hole
 
 Animations are coordinated through `app.Animations`, not scattered raw `TweenService` calls:
 
 ```lua
-app.Animations:Fade(surface.Instance, 0)
-app.Animations:Scale(surface.Instance, 1)
-app.Animations:Spring(surface.Instance, {
-    Size = UDim2.fromOffset(420, 240),
-})
+local motion = app.Animations
+motion:Fade(surface.Instance, 0.08, "control")
+motion:Slide(surface.Instance, UDim2.fromOffset(8, 0), "reveal")
+motion:Rotate(surface.Instance, 0, "orbit")
+motion:Stagger(
+    { surfaceA.Instance, surfaceB.Instance },
+    { BackgroundTransparency = 0.04 },
+    "surfaceIn",
+    0.06
+)
 
 app:SetReducedMotion(true) -- transitions become immediate
 ```
@@ -279,6 +339,8 @@ dashboard surfaces  →  controls  →  theme switching
 command palette     →  toasts    →  diagnostics
 compact layout      →  touch input → responsive window sizing
 ```
+
+For the single-file loader and interactive API smoke test, see [`examples/LoadstringSmokeTest.lua`](examples/LoadstringSmokeTest.lua).
 
 ---
 

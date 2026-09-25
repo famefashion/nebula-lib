@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Nebula LIB mark</title>
+  <desc id="desc">A layered orbital mark with a small luminous center.</desc>
+  <defs>
+    <linearGradient id="orbit" x1="32" y1="32" x2="220" y2="224" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#BDA9FF"/>
+      <stop offset=".52" stop-color="#63D7D0"/>
+      <stop offset="1" stop-color="#4D82FF"/>
+    </linearGradient>
+    <radialGradient id="core">
+      <stop stop-color="#FFF9FF"/>
+      <stop offset=".34" stop-color="#BDA9FF"/>
+      <stop offset="1" stop-color="#7458D7" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="#111525"/>
+  <ellipse cx="128" cy="128" rx="91" ry="44" fill="none" stroke="url(#orbit)" stroke-width="8" transform="rotate(-28 128 128)"/>
+  <ellipse cx="128" cy="128" rx="91" ry="44" fill="none" stroke="#4D82FF" stroke-opacity=".42" stroke-width="3" transform="rotate(34 128 128)"/>
+  <circle cx="128" cy="128" r="62" fill="url(#core)"/>
+  <circle cx="128" cy="128" r="15" fill="#F6F3FF"/>
+  <circle cx="190" cy="74" r="7" fill="#63D7D0"/>
+  <circle cx="61" cy="170" r="5" fill="#BDA9FF"/>
+</svg>

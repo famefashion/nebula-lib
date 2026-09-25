@@ -12,12 +12,17 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     local frame = Instance.new("Frame")
     frame.Name = "NebulaWindow"
     frame.AnchorPoint = Vector2.new(0.5, 0.5)
-    frame.Position = UDim2.fromScale(0.5, 0.5)
+    local targetPosition = UDim2.fromScale(0.5, 0.5)
+    frame.Position = UDim2.new(0.5, 0, 0.5, 12)
     frame.Size = UDim2.fromOffset(820, 520)
     frame.BackgroundColor3 = theme.BackgroundSecondary
-    frame.BackgroundTransparency = 0.04
+    frame.BackgroundTransparency = 1
     frame.BorderSizePixel = 0
     frame.Parent = root
+    animations:Play(frame, {
+        Position = targetPosition,
+        BackgroundTransparency = 0.04,
+    }, "reveal")
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, theme.CornerRadius + 4)
     corner.Parent = frame
@@ -156,6 +161,12 @@ function Window:SelectTab(tab)
         item.Button.BackgroundTransparency = active and 0 or 0.4
         item.Button.BackgroundColor3 = active and self.Theme.Accent or self.Theme.SurfaceSecondary
         item.Button.TextColor3 = active and self.Theme.Background or self.Theme.TextSecondary
+        if active then
+            local scale = item.Page:FindFirstChildOfClass("UIScale") or Instance.new("UIScale")
+            scale.Scale = 0.97
+            scale.Parent = item.Page
+            self.Animations:Scale(item.Page, 1, "reveal")
+        end
     end
 end
 

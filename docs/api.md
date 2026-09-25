@@ -28,6 +28,23 @@ Creates an app runtime.
 - `Toast(message, kind?, duration?)` → toast instance
 - `Destroy()` → `nil`
 
+## Animations
+
+`app.Animations` is the shared, interruptible animation service:
+
+- `Play(instance, properties, preset?, delayTime?)` → Tween or `nil`
+- `Fade(instance, transparency, preset?)` → Tween or `nil`
+- `Scale(guiObject, scale, preset?)` → Tween or `nil`
+- `Spring(instance, properties)` → Tween or `nil`
+- `Slide(guiObject, position, preset?)` → Tween or `nil`
+- `Rotate(guiObject, rotation, preset?)` → Tween or `nil`
+- `Stagger(instances, properties, preset?, interval?)` → list of Tweens
+- `GetActiveCount()` → number of active Tweens
+- `SetReducedMotion(enabled)` and `Destroy()`
+
+Built-in presets: `surfaceIn`, `control`, `spring`, `quick`, `reveal`, and `orbit`.
+`Stagger` uses a per-item delay; reduced-motion mode applies every target immediately.
+
 ## Window and tab methods
 
 - `CreateWindow({ Title, Subtitle })`

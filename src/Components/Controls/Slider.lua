@@ -8,8 +8,9 @@ local Slider = {}
 Slider.__index = Slider
 
 function Slider.new(parent: Instance, options: {[string]: any}, theme, animations)
-    local min = options.Min or 0
-    local max = options.Max or 100
+    local range = options.Range
+    local min = options.Min or (range and range.Min) or 0
+    local max = options.Max or (range and range.Max) or 100
     local value = math.clamp(options.Default or min, min, max)
     local holder = Instance.new("Frame")
     holder.Name = options.Label or "Slider"

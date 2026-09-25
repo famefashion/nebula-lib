@@ -56,7 +56,6 @@ local function runSmokeTest()
         },
     })
 
-    app:SetRenderMode("2D")
     app:SetDebug(true)
     app:SetReducedMotion(false)
     for _, method in ipairs({
@@ -180,6 +179,9 @@ local function runSmokeTest()
     app.Commands:Toggle()
     app.Commands:Close()
 
+    -- Render-mode changes rebuild the root, so exercise this after the visible
+    -- controls, toast, and command-palette checks are complete.
+    app:SetRenderMode("2D")
     local report = app:GetDiagnostics()
     assert(report.RenderMode == "2D", "Render mode diagnostic failed")
     assert(report.ComponentCount >= 1, "Component count diagnostic failed")

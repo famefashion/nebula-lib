@@ -111,8 +111,7 @@ local function runSmokeTest()
 
     local slider = firstSurface:AddSlider({
         Label = "Signal intensity",
-        Min = 0,
-        Max = 100,
+        Range = NumberRange.new(0, 100),
         Default = 40,
         Format = function(value)
             return string.format("%d%%", math.floor(value))
@@ -182,6 +181,7 @@ local function runSmokeTest()
     -- Render-mode changes rebuild the root, so exercise this after the visible
     -- controls, toast, and command-palette checks are complete.
     app:SetRenderMode("2D")
+    app:Toast("Render mode remained stable", "info", 1)
     local report = app:GetDiagnostics()
     assert(report.RenderMode == "2D", "Render mode diagnostic failed")
     assert(report.ComponentCount >= 1, "Component count diagnostic failed")

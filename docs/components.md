@@ -10,7 +10,7 @@
 
 - `AddButton({ Label, OnClick })`
 - `AddToggle({ Label, Default, OnChanged })`
-- `AddSlider({ Label, Min, Max, Default, Format, OnChanged })`
+- `AddSlider({ Label, Min, Max, Range, Default, Format, OnChanged })`
 
 ## Command palette
 

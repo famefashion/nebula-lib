@@ -1,6 +1,6 @@
 <svg width="1200" height="300" viewBox="0 0 1200 300" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">Nebula LIB</title>
-  <desc id="desc">An animated monochrome orbital grid representing the Nebula LIB Roblox UI framework.</desc>
+  <desc id="desc">A monochrome animated black hole and orbital grid representing the Nebula LIB Roblox UI framework.</desc>
   <defs>
     <linearGradient id="fade" x1="0" y1="0" x2="1200" y2="300" gradientUnits="userSpaceOnUse">
       <stop stop-color="#050505"/>
@@ -37,13 +37,14 @@
       <ellipse cx="974" cy="116" rx="132" ry="164" transform="rotate(67 974 116)" stroke="#FFFFFF" stroke-opacity="0.1"/>
     </g>
 
-    <circle cx="974" cy="116" r="12" fill="#FFFFFF" filter="url(#glow)">
-      <animate attributeName="r" values="10;15;10" dur="3s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="0.7;1;0.7" dur="3s" repeatCount="indefinite"/>
-    </circle>
-    <circle cx="974" cy="116" r="42" stroke="#FFFFFF" stroke-opacity="0.22">
-      <animate attributeName="r" values="32;56;32" dur="3s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="0.35;0;0.35" dur="3s" repeatCount="indefinite"/>
+    <ellipse cx="974" cy="116" rx="86" ry="25" transform="rotate(-18 974 116)" stroke="#FFFFFF" stroke-width="3" stroke-opacity="0.72" filter="url(#glow)">
+      <animate attributeName="stroke-opacity" values="0.42;0.9;0.42" dur="4s" repeatCount="indefinite"/>
+    </ellipse>
+    <ellipse cx="974" cy="116" rx="58" ry="18" transform="rotate(-18 974 116)" stroke="#FFFFFF" stroke-width="1" stroke-opacity="0.4"/>
+    <circle cx="974" cy="116" r="25" fill="#030303" stroke="#FFFFFF" stroke-opacity="0.72" stroke-width="1.5"/>
+    <circle cx="974" cy="116" r="34" stroke="#FFFFFF" stroke-opacity="0.28">
+      <animate attributeName="r" values="30;42;30" dur="3.4s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.48;0.08;0.48" dur="3.4s" repeatCount="indefinite"/>
     </circle>
 
     <g fill="#FFFFFF">

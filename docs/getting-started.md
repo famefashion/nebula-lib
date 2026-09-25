@@ -3,16 +3,14 @@
 ## Requirements
 
 - Roblox Studio with Luau support.
-- A LocalScript running for the local player.
-- The `src/` tree copied into ReplicatedStorage or synced with Rojo.
+- A trusted compatible runtime that provides `game:HttpGet` and `loadstring`.
 
 ## Create an app
 
 ```lua
-local Nebula = require(game:GetService("ReplicatedStorage").Packages.Nebula)
+local Nebula = loadstring(game:HttpGet("https://raw.githubusercontent.com/famefashion/nebula-lib/main/src/Nebula.lua"))()
 local app = Nebula.new({
     Parent = game:GetService("Players").LocalPlayer.PlayerGui,
-    Title = "Control Room",
 })
 
 local window = app:CreateWindow({ Title = "Control Room" })
@@ -28,3 +26,6 @@ surface:AddButton({
 ```
 
 `Nebula.new` owns every created root, connection, tween, and component. Call `app:Destroy()` when your feature is unloaded.
+
+The fetched file is the complete runtime package. It does not call
+`require(script...)` or download any additional modules.

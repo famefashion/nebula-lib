@@ -1,50 +1,154 @@
 <div align="center">
 
-# ✦ Nebula LIB
+<img src="assets/logo/nebula-banner.svg" alt="Nebula LIB — a responsive Roblox Luau UI framework" width="100%" />
 
-**A dimensional, responsive, atmospheric UI framework for Roblox Luau.**
+<br />
 
-[![Status: Unreleased](https://img.shields.io/badge/status-unreleased-9b87ff?style=flat-square)](CHANGELOG.md)
-[![Luau](https://img.shields.io/badge/language-Luau-00a8ff?style=flat-square)](https://luau.org/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-62d6c7?style=flat-square)](LICENSE)
+[![Status: Unreleased](https://img.shields.io/badge/status-unreleased-ffffff?style=for-the-badge&labelColor=050505)](CHANGELOG.md)
+[![Luau](https://img.shields.io/badge/language-Luau-ffffff?style=for-the-badge&labelColor=050505)](https://luau.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-ffffff?style=for-the-badge&labelColor=050505)](LICENSE)
 
-<img src="assets/logo/nebula-mark.svg" alt="Nebula LIB mark" width="112" />
+<br />
 
-**Clean. Dimensional. Atmospheric. Responsive.**
+**A monochrome, dimensional UI runtime for Roblox.**
+
+<br />
+
+<a href="#-feature-deck">Explore the feature deck</a>
+&nbsp;&nbsp;·&nbsp;&nbsp;
+<a href="#-quick-start">Launch in minutes</a>
+&nbsp;&nbsp;·&nbsp;&nbsp;
+<a href="#-documentation">Read the docs</a>
+
+</div>
+
+<br />
+
+> **Nebula LIB** gives Roblox developers a composed UI foundation: responsive surfaces, shared motion, observable state, flexible rendering roots, and cleanup that does not get forgotten.
+
+<div align="center">
+
+`2D` &nbsp; `3D` &nbsp; `HYBRID` &nbsp; `TOUCH-READY` &nbsp; `CLEANUP-SAFE`
 
 </div>
 
 ---
 
-Nebula LIB is a modular Roblox UI runtime for developers who want application-quality interfaces without rebuilding lifecycle management, themes, layout, animation, and input behavior for every project.
+## ◌ Feature deck
 
-> The project is currently an initial public build. The shipped surface is intentionally documented below; experimental APIs are kept out of the public contract.
+The sections below are interactive. Open a category to see the complete shipped feature list.
 
-## ✦ Features
+<details open>
+<summary><strong>◈ Runtime foundation</strong> — the app lifecycle and public API</summary>
 
-| Area | What ships |
-| --- | --- |
-| Runtime | `Nebula.new`, ownership-aware cleanup, debug diagnostics, reduced motion |
-| Rendering | Shared component roots for `2D`, `3D`, and `Hybrid` presentation |
-| Layout | Row, column, grid, stack, and overlay helpers built on Roblox layout objects |
-| Components | Windows, tabs, surfaces, buttons, toggles, sliders, status indicators, command palette, and toast stack |
-| Themes | Presets, registration, switching, modification, and per-surface overrides |
-| Motion | Centralized fade, slide, scale, color, and spring presets |
-| Responsive UI | Viewport breakpoints, safe size helpers, touch-aware control sizing |
-| State | Subscription-based values that stay independent from application logic |
+- [x] `Nebula.new(options)` application instance
+- [x] `CreateWindow(options?)` window factory
+- [x] `Destroy()` teardown for the complete UI tree
+- [x] `GetDiagnostics()` with component count, viewport, breakpoint, render mode, and active animations
+- [x] Debug flag and reduced-motion switch
+- [x] `Maid` cleanup for instances, connections, threads, callbacks, and destroyable objects
+- [x] `Signal` event primitive
+- [x] `Value` observable state primitive with `Get`, `Set`, and `Subscribe`
 
-## ◈ Installation
+</details>
 
-Copy the `src/` tree into your Roblox project as a ModuleScript hierarchy, or sync it with Rojo:
+<details>
+<summary><strong>▣ Rendering</strong> — one component model, three presentation modes</summary>
 
-```text
-src/
-└── Nebula.lua
-```
+- [x] `2D` `ScreenGui` root
+- [x] `3D` `SurfaceGui` root attached to an `Adornee` `BasePart`
+- [x] `Hybrid` surface plus screen overlay root
+- [x] Configurable `Face`, `PixelsPerStud`, and `DisplayOrder`
+- [x] Runtime render-mode switching
+- [x] Shared window and component construction across modes
 
-Require `src/Nebula.lua` from a LocalScript. Nebula LIB uses Roblox services only and has no runtime package dependency.
+</details>
 
-## ⚡ Quick start
+<details>
+<summary><strong>▤ Components</strong> — composable application primitives</summary>
+
+- [x] `Window` with title bar, navigation, content region, and responsive sizing
+- [x] `Tab` navigation with selection state
+- [x] `Surface` content cards with title and layout support
+- [x] `Button` with `Activated` input
+- [x] `Toggle` with observable boolean state
+- [x] `Slider` with mouse and touch dragging, range limits, formatting, and callbacks
+- [x] `Command Palette` with keyboard toggle and filtered commands
+- [x] `Toast Stack` with success, warning, error, and info messages
+- [x] Component-level cleanup and theme references
+
+</details>
+
+<details>
+<summary><strong>⌗ Layout</strong> — predictable Roblox-native composition</summary>
+
+- [x] Row layout helper
+- [x] Column layout helper
+- [x] Grid layout helper
+- [x] Stack layout helper
+- [x] Overlay layout helper
+- [x] Spacing, padding, wrapping, cell sizing, and layout ordering
+
+</details>
+
+<details>
+<summary><strong>✦ Themes</strong> — make the system yours</summary>
+
+- [x] Seven built-in presets: Nebula Dark, Nebula Light, Midnight, Graphite, Aurora, Glass, and Minimal
+- [x] `RegisterTheme(name, theme)`
+- [x] `SetTheme(name)`
+- [x] `GetTheme()`
+- [x] `ModifyTheme(changes)`
+- [x] `ResetTheme()`
+- [x] Theme change notifications
+- [x] Shared theme tokens for surfaces, text, borders, accents, and radii
+
+</details>
+
+<details>
+<summary><strong>↝ Motion</strong> — centralized, interruptible animation</summary>
+
+- [x] Shared `Animator` service
+- [x] Fade transitions
+- [x] Scale transitions
+- [x] Spring transitions
+- [x] Generic property tweening
+- [x] `surfaceIn`, `control`, `spring`, and `quick` presets
+- [x] Active-animation tracking
+- [x] Existing tweens cancel before a replacement starts
+- [x] Reduced-motion mode applies state immediately
+
+</details>
+
+<details>
+<summary><strong>⌁ Responsive behavior</strong> — desktop room without breaking touch</summary>
+
+- [x] `Compact`, `Regular`, and `Wide` viewport breakpoints
+- [x] Compact navigation collapse
+- [x] Safe window margins on small viewports
+- [x] Adaptive content positioning and sizing
+- [x] Touch-compatible `Activated` controls
+- [x] Camera viewport change handling
+
+</details>
+
+<details>
+<summary><strong>◫ Developer experience</strong> — stay in control</summary>
+
+- [x] Source-first ModuleScript hierarchy
+- [x] No runtime package dependency beyond Roblox services
+- [x] Strict Luau annotations in runtime modules
+- [x] Showcase example with dashboard surfaces, controls, themes, commands, diagnostics, and toasts
+- [x] API reference and focused guides
+- [x] MIT license, changelog, contribution guide, code of conduct, and security policy
+
+</details>
+
+---
+
+## ⌁ Quick start
+
+Copy the `src/` tree into your Roblox project as a ModuleScript hierarchy, or sync it with Rojo. Then require `src/Nebula.lua` from a `LocalScript`.
 
 ```lua
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -52,7 +156,6 @@ local Nebula = require(ReplicatedStorage.Packages.Nebula)
 
 local app = Nebula.new({
     Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"),
-    Title = "Signal Console",
     RenderMode = "2D",
     Theme = "Nebula Dark",
 })
@@ -63,16 +166,16 @@ local window = app:CreateWindow({
 })
 
 local overview = window:AddTab("Overview", "◈")
-local card = overview:AddSurface({ Title = "Telemetry" })
+local telemetry = overview:AddSurface({ Title = "Telemetry" })
 
-card:AddButton({
+telemetry:AddButton({
     Label = "Refresh",
     OnClick = function()
         app:Toast("Telemetry refreshed", "success")
     end,
 })
 
-local enabled = card:AddToggle({
+telemetry:AddToggle({
     Label = "Live updates",
     Default = true,
     OnChanged = function(value)
@@ -83,92 +186,131 @@ local enabled = card:AddToggle({
 -- Call app:Destroy() when the owning feature is unloaded.
 ```
 
-## 🎨 Themes
+<details>
+<summary><strong>⌘ See the command palette setup</strong></summary>
 
 ```lua
-app:RegisterTheme("Ocean", {
-    Accent = Color3.fromRGB(84, 189, 255),
-    AccentSecondary = Color3.fromRGB(125, 116, 255),
-    Surface = Color3.fromRGB(24, 29, 45),
+local app = Nebula.new({
+    Commands = {
+        {
+            Label = "Open diagnostics",
+            OnSelect = function()
+                print(app:GetDiagnostics())
+            end,
+        },
+        {
+            Label = "Use monochrome theme",
+            OnSelect = function()
+                app:SetTheme("Graphite")
+            end,
+        },
+    },
 })
 
-app:SetTheme("Ocean")
+app.Commands:Open()
+```
+
+</details>
+
+---
+
+## ◐ Theme it
+
+Nebula LIB ships monochrome-ready, but every surface reads from shared tokens:
+
+```lua
+app:RegisterTheme("Obsidian", {
+    Accent = Color3.fromRGB(255, 255, 255),
+    AccentSecondary = Color3.fromRGB(180, 180, 180),
+    Surface = Color3.fromRGB(14, 14, 14),
+    SurfaceSecondary = Color3.fromRGB(24, 24, 24),
+})
+
+app:SetTheme("Obsidian")
 app:ModifyTheme({ CornerRadius = 14 })
 ```
 
-Built-in presets are `Nebula Dark`, `Nebula Light`, `Midnight`, `Graphite`, `Aurora`, `Glass`, and `Minimal`.
+Built-in presets: `Nebula Dark`, `Nebula Light`, `Midnight`, `Graphite`, `Aurora`, `Glass`, and `Minimal`.
 
-## 🧩 Components
+---
 
-The initial component set focuses on composable application primitives:
+## ◇ Render anywhere
 
-- **Structure:** Window, Tab, Surface, Row, Column, Grid, Stack, Overlay
-- **Controls:** Button, Toggle, Slider
-- **Feedback:** Status Indicator, Toast Stack
-- **Navigation:** Command Palette
+The component API stays the same while the root changes:
 
-Every interactive component provides cleanup-safe connections and an observable state where it has a value.
+```lua
+app:SetRenderMode("2D")
 
-## 🌀 Animation system
+app:SetRenderMode("3D", {
+    Adornee = workspace.Terminal.Screen,
+})
+
+app:SetRenderMode("Hybrid", {
+    Adornee = workspace.Terminal.Screen,
+})
+```
+
+`3D` and `Hybrid` modes require an `Adornee` `BasePart`. Configure `Face` and `PixelsPerStud` when the physical display needs a different orientation or density.
+
+---
+
+## ∿ Motion without the mess
 
 Animations are coordinated through `app.Animations`, not scattered raw `TweenService` calls:
 
 ```lua
 app.Animations:Fade(surface.Instance, 0)
-app.Animations:Spring(surface.Instance, { Size = UDim2.fromOffset(420, 240) })
-app.Animations:Play(surface.Instance, { BackgroundTransparency = 0.1 }, "surfaceIn")
-```
-
-Set `ReducedMotion = true` to make transitions immediate.
-
-## 📱 Responsive UI
-
-Nebula LIB measures the active camera viewport and exposes the current breakpoint as `Compact`, `Regular`, or `Wide`. The Window adapts navigation visibility and content sizing without scaling desktop coordinates down to unusable touch targets.
-
-## 🌐 2D / 3D / Hybrid rendering
-
-Switch the root presentation without changing component construction:
-
-```lua
-app:SetRenderMode("2D")
-app:SetRenderMode("3D", {
-    Adornee = workspace.Terminal.Screen,
+app.Animations:Scale(surface.Instance, 1)
+app.Animations:Spring(surface.Instance, {
+    Size = UDim2.fromOffset(420, 240),
 })
-app:SetRenderMode("Hybrid")
+
+app:SetReducedMotion(true) -- transitions become immediate
 ```
 
-3D and Hybrid modes require an `Adornee` BasePart. The same state and component APIs are used in each mode.
+---
 
-## 🖥 Showcase
+## ⌂ Showcase
 
-Open `examples/Showcase.lua` in a LocalScript to see the framework's dashboard-style surface, theme switching, controls, command palette, toasts, and responsive behavior.
+Open [`examples/Showcase.lua`](examples/Showcase.lua) in a `LocalScript` to see:
 
-## 📚 Documentation
+```text
+dashboard surfaces  →  controls  →  theme switching
+command palette     →  toasts    →  diagnostics
+compact layout      →  touch input → responsive window sizing
+```
 
-- [Getting started](docs/getting-started.md)
-- [Components](docs/components.md)
-- [Themes](docs/themes.md)
-- [Animations](docs/animations.md)
-- [Rendering](docs/rendering.md)
-- [Responsive behavior](docs/responsive.md)
-- [State and input](docs/state.md)
-- [Layouts](docs/layouts.md)
-- [Performance and cleanup](docs/performance.md)
-- [API reference](docs/api.md)
+---
 
-## 🛠 Development
-
-The repository is source-first. Keep runtime modules under `src/`, examples under `examples/`, and ensure every public API change has a documentation example. The validation workflow checks required files, Lua source presence, Markdown links, and accidental secret patterns.
-
-## 🤝 Contributing
-
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Bug reports and feature proposals have concise templates in `.github/ISSUE_TEMPLATE/`.
-
-## 📜 License
-
-Nebula LIB is available under the [MIT License](LICENSE).
+## ◒ Documentation
 
 <div align="center">
+
+| Start here | Build with it | Go deeper |
+| --- | --- | --- |
+| [Getting started](docs/getting-started.md) | [Components](docs/components.md) | [API reference](docs/api.md) |
+| [Installation](docs/installation.md) | [Themes](docs/themes.md) | [Performance and cleanup](docs/performance.md) |
+| [Showcase](examples/Showcase.lua) | [Layouts](docs/layouts.md) | [Rendering](docs/rendering.md) |
+|  | [Animations](docs/animations.md) | [Responsive behavior](docs/responsive.md) |
+|  | [State and input](docs/state.md) |  |
+
+</div>
+
+---
+
+## ⌘ Contributing
+
+The repository is source-first. Keep runtime modules under `src/`, examples under `examples/`, and add a documentation example for every public API change.
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. See [SECURITY.md](SECURITY.md) for vulnerability reports.
+
+<div align="center">
+
+<br />
+
+**Black canvas. White signal. Infinite surfaces.**
+
+<br />
 
 *Built for interfaces that feel like places, not panels.*
 

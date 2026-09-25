@@ -17,17 +17,23 @@ function Button.new(parent: Instance, options: {[string]: any}, theme, animation
     button.TextColor3 = theme.Text
     button.TextSize = 13
     button.Parent = parent
+    local scale = Instance.new("UIScale")
+    scale.Scale = 0.96
+    scale.Parent = button
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, theme.CornerRadius - 3)
     corner.Parent = button
     local self = Component.new(button, theme, animations)
     setmetatable(self, Button)
+    animations:Scale(button, 1, "spring")
 
     self.Maid:Give(button.MouseEnter:Connect(function()
         animations:Play(button, { BackgroundColor3 = theme.Border }, "quick")
+        animations:Scale(button, 1.025, "quick")
     end))
     self.Maid:Give(button.MouseLeave:Connect(function()
         animations:Play(button, { BackgroundColor3 = theme.SurfaceSecondary }, "quick")
+        animations:Scale(button, 1, "quick")
     end))
     self.Maid:Give(button.Activated:Connect(function()
         if options.OnClick then

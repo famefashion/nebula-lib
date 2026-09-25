@@ -1,8 +1,6 @@
 --!strict
 
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-
 local Maid = require(script.Core.Maid)
 local Manager = require(script.Theme.Manager)
 local Animator = require(script.Animation.Animator)
@@ -78,8 +76,22 @@ function Nebula:ResetTheme()
 end
 
 function Nebula:SetRenderMode(mode: string, options: {[string]: any}?)
+    assert(not self._destroyed, "Cannot change render mode after Nebula:Destroy()")
+    if mode == self.Root.Mode and not options then
+        return
+    end
+    local commands = self.Commands and self.Commands._commands
+    if self.Toasts then
+        self.Toasts:Destroy()
+    end
+    if self.Commands then
+        self.Commands:Destroy()
+    end
     self.Root:SetMode(mode, options)
     self._root = self.Root.Instance
+    assert(self._root, "Nebula render root was not created")
+    self.Toasts = ToastStack.new(self._root, self:GetTheme(), self.Animations, self.Maid)
+    self.Commands = Command.new(self._root, commands, self:GetTheme(), self.Animations, self.Maid)
 end
 
 function Nebula:SetDebug(enabled: boolean)
@@ -106,11 +118,13 @@ function Nebula:GetDiagnostics()
 end
 
 function Nebula:_applyTheme(theme)
-    self.Toasts.Theme = theme
+    if self.Toasts then
+        self.Toasts.Theme = theme
+    end
 end
 
 function Nebula:_applyResponsive()
-    if not self._root then return end
+    if not self or not self._root or not self._root.Parent then return end
     local compact = self._breakpoint == "Compact"
     for _, child in ipairs(self._root:GetChildren()) do
         if child.Name == "NebulaWindow" then

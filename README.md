@@ -10,7 +10,7 @@
 
 <br />
 
-**A monochrome UI runtime with a black-hole-inspired sense of depth.**
+**Wrath was here ;).**
 
 <br />
 

@@ -11,6 +11,23 @@ app:SetRenderMode("3D", {
 app:SetRenderMode("Hybrid", { Adornee = workspace.Terminal.Screen })
 ```
 
-`2D` creates a ScreenGui. `3D` creates a SurfaceGui on the supplied BasePart. `Hybrid` creates a SurfaceGui plus a screen overlay for shared app-level UI. Existing components are migrated to the new root when the mode changes.
+`2D` creates a ScreenGui. `3D` creates a SurfaceGui on a supplied BasePart or
+creates a physical follow display when no `Adornee` is supplied. `Hybrid` creates
+a SurfaceGui plus a screen overlay for shared app-level UI. Existing components
+are not migrated between roots; set the mode before creating windows or rebuild
+them after switching.
 
-Every window automatically receives a `UI Settings` tab with three mode buttons: **2D**, **3D**, and **Hybrid**. When `Nebula.new` was given an `Adornee` BasePart, selecting 3D or Hybrid animates the current surface away, rebuilds the root in place, and preserves the existing window and tabs. Selecting a non-2D mode without an `Adornee` shows a warning instead of breaking the UI.
+When `RenderMode = "3D"` or `"Hybrid"` has no `Adornee`, Nebula creates a physical
+Neon display part that follows the local player's character with a small orbit and
+hover motion. A PointLight is attached to that physical part for the gentle glow;
+the GUI itself is not used as the glow source.
+
+Every render mode also gets a separate screen-space `NebulaToggleButton`. It stays
+available while the 3D display is hidden. Hiding a followed 3D display runs its
+close sequence: orbit around the player, rise upward, fade the physical glow, and
+disable the surface.
+
+Useful 3D options include `FollowPlayer`, `FollowOffset`, `OrbitRadius`,
+`OrbitSpeed`, `HoverSpeed`, `HoverAmplitude`, `PhysicalSize`, `GlowColor`,
+`GlowBrightness`, `GlowRange`, `CloseOrbitDuration`, `CloseRiseDuration`, and
+`CloseRiseHeight`.

@@ -1,24 +1,33 @@
 # Installation
 
-`src/Nebula.lua` is a generated, self-contained Luau loadstring package. Fetching
-that one file returns the Nebula API table; it does not need a ModuleScript,
-`script`, or any sibling source files at runtime.
+`src/` contains the maintainable ModuleScript source tree. `dist/Nebula.lua` is
+the generated, self-contained Luau loadstring package.
 
-## Loadstring package
+## ModuleScript
 
-Use it from a trusted compatible runtime that provides `game:HttpGet` and
-`loadstring`:
+Sync or copy the `src/` tree into ReplicatedStorage and require the `Nebula`
+ModuleScript entry:
 
 ```lua
-local Nebula = loadstring(game:HttpGet("https://raw.githubusercontent.com/famefashion/nebula-lib/main/src/Nebula.lua"))()
+local Nebula = require(game:GetService("ReplicatedStorage").Packages.Nebula)
 local app = Nebula.new({ Theme = "Nebula Dark" })
 ```
 
-The module tree under `src/` is the editable source of truth only. After changing
-those modules, regenerate the loadstring package from the repository root:
+## Loadstring package
+
+Use the generated `dist/Nebula.lua` from a trusted compatible runtime that
+provides `game:HttpGet` and `loadstring`:
+
+```lua
+local Nebula = loadstring(game:HttpGet("https://raw.githubusercontent.com/famefashion/nebula-lib/main/dist/Nebula.lua"))()
+local app = Nebula.new({ Theme = "Nebula Dark" })
+```
+
+After changing the modular source, regenerate the standalone package:
 
 ```sh
-node tools/build-bundle.mjs
+npm run build
+npm run check:bundle
 ```
 
 Remote code changes when the branch changes. Review the source and pin a release

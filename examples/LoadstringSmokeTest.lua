@@ -3,7 +3,7 @@
 -- and (for automatic clipboard copy) setclipboard or toclipboard.
 
 -- This review-branch URL works before merge. After merging, change the ref to "main".
-local SOURCE_URL = "https://raw.githubusercontent.com/famefashion/nebula-lib/agent/nebula-loadstring-runtime-20260925/src/Nebula.lua"
+local SOURCE_URL = "https://raw.githubusercontent.com/famefashion/nebula-lib/main/src/Nebula.lua"
 local app
 
 local function formatError(err)

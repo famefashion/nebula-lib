@@ -1,32 +1,24 @@
 # Installation
 
-`src/Nebula.lua` is a generated, self-contained Luau bundle. It can be installed as one ModuleScript or fetched by a compatible runtime that provides `game:HttpGet` and `loadstring`.
+`src/Nebula.lua` is a generated, self-contained Luau loadstring package. Fetching
+that one file returns the Nebula API table; it does not need a ModuleScript,
+`script`, or any sibling source files at runtime.
 
-## ModuleScript (recommended for Roblox Studio)
+## Loadstring package
 
-Copy `src/Nebula.lua` into ReplicatedStorage as a ModuleScript named `Nebula`, then:
-
-```lua
-local Nebula = require(game:GetService("ReplicatedStorage").Packages.Nebula)
-local app = Nebula.new({ Theme = "Nebula Dark" })
-```
-
-The module tree under `src/` remains the editable source of truth. After changing
-those modules, regenerate the standalone entry point from the repository root:
-
-```sh
-node tools/build-bundle.mjs
-```
-
-## Loadstring (compatible custom runtimes only)
-
-Use this only in a trusted runtime you control that explicitly implements both
-`game:HttpGet` and `loadstring`. The ordinary Roblox client does not enable this
-pattern for LocalScripts.
+Use it from a trusted compatible runtime that provides `game:HttpGet` and
+`loadstring`:
 
 ```lua
 local Nebula = loadstring(game:HttpGet("https://raw.githubusercontent.com/famefashion/nebula-lib/main/src/Nebula.lua"))()
 local app = Nebula.new({ Theme = "Nebula Dark" })
+```
+
+The module tree under `src/` is the editable source of truth only. After changing
+those modules, regenerate the loadstring package from the repository root:
+
+```sh
+node tools/build-bundle.mjs
 ```
 
 Remote code changes when the branch changes. Review the source and pin a release

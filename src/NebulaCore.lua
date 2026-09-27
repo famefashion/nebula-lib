@@ -13,6 +13,7 @@ local Responsive = require(script.Utilities.Responsive)
 
 local Nebula = {}
 Nebula.__index = Nebula
+Nebula.VERSION = "0.1.0"
 
 function Nebula.new(options: {[string]: any}?)
     options = options or {}
@@ -53,9 +54,10 @@ end
 function Nebula:CreateWindow(options: {[string]: any}?)
     assert(not self._destroyed, "Cannot create a window after Nebula:Destroy()")
     local window = Window.new(self._root, options or {}, self:GetTheme(), self.Animations, self.Maid)
-    self._componentCount += 1
     table.insert(self._windows, window)
-    window:SetResponsive(self._breakpoint == "Compact")
+    window:AddSettingsTab(self)
+    self._componentCount += 1
+    self:_applyResponsive()
     return window
 end
 
@@ -79,11 +81,11 @@ function Nebula:ResetTheme()
     self.ThemeManager:Reset()
 end
 
-function Nebula:CanUseRenderMode(mode: string): boolean
+function Nebula:CanUseRenderMode(mode: string, options: {[string]: any}?): boolean
     if mode == "2D" then
         return true
     end
-    local adornee = self.Root.Options.Adornee
+    local adornee = (options and options.Adornee) or self.Root.Options.Adornee
     return typeof(adornee) == "Instance" and adornee:IsA("BasePart")
 end
 
@@ -97,9 +99,14 @@ function Nebula:GetRenderModes(): {{Name: string, Available: boolean, Reason: st
 end
 
 function Nebula:SetRenderMode(mode: string, options: {[string]: any}?)
-    assert(self:CanUseRenderMode(mode), ("Nebula render mode %s requires a BasePart Adornee"):format(tostring(mode)))
+    assert(not self._destroyed, "Cannot change render mode after Nebula:Destroy()")
+    assert(self:CanUseRenderMode(mode, options), ("Nebula render mode %s requires a BasePart Adornee"):format(tostring(mode)))
+    if mode == self.Root.Mode and not options then
+        return
+    end
     self.Root:SetMode(mode, options)
     self._root = self.Root.Instance
+    assert(self._root, "Nebula render root was not created")
     self:_applyResponsive()
 end
 
@@ -134,11 +141,16 @@ function Nebula:_applyTheme(theme)
 end
 
 function Nebula:_applyResponsive()
-    if not self._root then return end
-    local compact = self._breakpoint == "Compact"
+    if not self or not self._root or not self._root.Parent then
+        return
+    end
+    local camera = workspace.CurrentCamera
+    if not camera then
+        return
+    end
     for _, window in ipairs(self._windows) do
         if window and window.Instance and window.Instance.Parent then
-            window:SetResponsive(compact)
+            window:ApplyResponsive(camera.ViewportSize, self._breakpoint)
         end
     end
 end

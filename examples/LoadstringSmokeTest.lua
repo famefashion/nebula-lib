@@ -41,6 +41,7 @@ local function runSmokeTest()
     local Nebula = loader()
     assert(type(Nebula) == "table", "Nebula.lua did not return a library table")
     assert(type(Nebula.new) == "function", "Nebula.new is missing")
+    assert(type(Nebula.VERSION) == "string", "Nebula.VERSION is missing")
 
     app = Nebula.new({
         Theme = "Nebula Dark",
@@ -71,17 +72,21 @@ local function runSmokeTest()
         "GetDiagnostics",
         "Toast",
         "Destroy",
+        "SetVisible",
+        "Open",
+        "Close",
+        "Toggle",
     }) do
         assert(type(app[method]) == "function", "Missing runtime method: " .. method)
     end
 
     local window = app:CreateWindow({
         Title = "Nebula Runtime Check",
-        Subtitle = "Loadstring Â· API Â· controls Â· motion",
+        Subtitle = "Loadstring · API · controls · motion",
     })
     assert(window:IsAlive(), "Window failed its lifecycle check")
 
-    local dashboard = window:AddTab("Dashboard", "â")
+    local dashboard = window:AddTab("Dashboard", "◈")
     dashboard:AddText("Use the controls below to exercise the live UI.")
     local firstSurface = dashboard:AddSurface({
         Title = "Signal controls",
@@ -125,7 +130,7 @@ local function runSmokeTest()
     assert(slider:Get() == 72 and sliderChanged == 72, "Slider Get/Set/OnChanged failed")
     sliderConnection:Disconnect()
 
-    local diagnosticsTab = window:AddTab("Diagnostics", "â")
+    local diagnosticsTab = window:AddTab("Diagnostics", "⌁")
     diagnosticsTab:AddText("Diagnostics and theme methods are active.")
     local secondSurface = diagnosticsTab:AddSurface({
         Title = "Event horizon",
@@ -191,7 +196,24 @@ local function runSmokeTest()
     assert(animator:GetActiveCount() == 0, "Animator cleanup left active Tweens")
     app:Destroy()
     app = nil
-    return "Nebula loaded successfully. API and UI checks passed; click Run callback and press P to try the interactive paths."
+
+    local threeDApp = Nebula.new({
+        Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"),
+        RenderMode = "3D",
+        ReducedMotion = true,
+        CloseOrbitDuration = 0.12,
+        CloseRiseDuration = 0.12,
+    })
+    assert(threeDApp.Root.Instance:IsA("SurfaceGui"), "3D root did not create a SurfaceGui")
+    threeDApp:Toggle()
+    task.wait(0.3)
+    threeDApp:Open()
+    assert(threeDApp.Root:IsVisible(), "3D root did not reopen")
+    threeDApp:Close()
+    task.wait(0.3)
+    threeDApp:Destroy()
+
+    return "Nebula loaded successfully. API, 2D, 3D, controls, toggle, and motion checks passed."
 end
 
 local ok, result = xpcall(runSmokeTest, formatError)

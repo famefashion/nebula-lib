@@ -518,6 +518,10 @@ function Command:Close()
     self._input:ReleaseFocus()
 end
 
+function Command:Destroy()
+    Component.Destroy(self)
+end
+
 return Command
 
 end
@@ -618,6 +622,10 @@ function ToastStack:Push(message: string, kind: string?, duration: number?)
         end
     end)
     return toast
+end
+
+function ToastStack:Destroy()
+    Component.Destroy(self)
 end
 
 return ToastStack

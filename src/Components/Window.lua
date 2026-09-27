@@ -56,11 +56,16 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     subtitle.TextXAlignment = Enum.TextXAlignment.Left
     subtitle.Parent = header
 
-    local nav = Instance.new("Frame")
+    local nav = Instance.new("ScrollingFrame")
     nav.Name = "Navigation"
     nav.BackgroundTransparency = 1
     nav.Position = UDim2.fromOffset(20, 78)
     nav.Size = UDim2.new(0, 164, 1, -98)
+    nav.BorderSizePixel = 0
+    nav.CanvasSize = UDim2.new()
+    nav.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    nav.ScrollBarThickness = 0
+    nav.ScrollingDirection = Enum.ScrollingDirection.Y
     nav.Parent = frame
     Layout.Column(nav, { Spacing = 6 })
     local content = Instance.new("ScrollingFrame")
@@ -84,27 +89,112 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     maid:Give(self)
 
     local dragging = false
+    local dragInput
     local dragStart: Vector2
-    local startPosition: UDim2
+    local startPosition: Vector2
     self.Maid:Give(header.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
+            dragInput = input
             dragStart = input.Position
-            startPosition = frame.Position
+            startPosition = frame.AbsolutePosition + frame.AbsoluteSize / 2
+        end
+    end))
+    self.Maid:Give(header.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
         end
     end))
     self.Maid:Give(UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        if dragging and (input == dragInput
+            or input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
-            frame.Position = UDim2.new(startPosition.X.Scale, startPosition.X.Offset + delta.X, startPosition.Y.Scale, startPosition.Y.Offset + delta.Y)
+            frame.Position = UDim2.fromOffset(
+                startPosition.X + delta.X,
+                startPosition.Y + delta.Y
+            )
+            self:ConstrainToViewport()
         end
     end))
     self.Maid:Give(UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input == dragInput
+            or input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
+            dragInput = nil
+            self:ConstrainToViewport()
         end
     end))
     return self
+end
+
+function Window:ConstrainToViewport(viewportSize: Vector2?)
+    local camera = workspace.CurrentCamera
+    local viewport = viewportSize or (camera and camera.ViewportSize)
+    if not viewport or not self.Instance or not self.Instance.Parent then
+        return
+    end
+
+    local frame = self.Instance
+    local halfWidth = frame.AbsoluteSize.X / 2
+    local halfHeight = frame.AbsoluteSize.Y / 2
+    local margin = 12
+    local position = frame.AbsolutePosition + frame.AbsoluteSize / 2
+    local minimumX = math.min(halfWidth + margin, viewport.X / 2)
+    local maximumX = math.max(viewport.X - halfWidth - margin, viewport.X / 2)
+    local minimumY = math.min(halfHeight + margin, viewport.Y / 2)
+    local maximumY = math.max(viewport.Y - halfHeight - margin, viewport.Y / 2)
+
+    frame.Position = UDim2.fromOffset(
+        math.clamp(position.X, minimumX, maximumX),
+        math.clamp(position.Y, minimumY, maximumY)
+    )
+end
+
+function Window:ApplyResponsive(viewportSize: Vector2, breakpoint: string)
+    if not self.Instance or not self.Instance.Parent then
+        return
+    end
+
+    local compact = breakpoint == "Compact" or viewportSize.X < 760
+    local width = math.max(math.min(820, viewportSize.X - (compact and 24 or 32)), 1)
+    local height = math.max(math.min(520, viewportSize.Y - (compact and 40 or 48)), 1)
+    self.Instance.Size = UDim2.fromOffset(width, height)
+
+    local layout = self._navigation:FindFirstChildOfClass("UIListLayout")
+    if compact then
+        self._navigation.Position = UDim2.fromOffset(12, 68)
+        self._navigation.Size = UDim2.new(1, -24, 0, 38)
+        self._navigation.AutomaticCanvasSize = Enum.AutomaticSize.X
+        self._navigation.ScrollingDirection = Enum.ScrollingDirection.X
+        if layout then
+            layout.FillDirection = Enum.FillDirection.Horizontal
+            layout.VerticalAlignment = Enum.VerticalAlignment.Center
+        end
+        self._content.Position = UDim2.fromOffset(12, 116)
+        self._content.Size = UDim2.new(1, -24, 1, -128)
+        for _, tab in ipairs(self._tabs) do
+            tab.Button.Size = UDim2.fromOffset(128, 34)
+        end
+    else
+        self._navigation.Position = UDim2.fromOffset(20, 78)
+        self._navigation.Size = UDim2.new(0, 164, 1, -98)
+        self._navigation.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        self._navigation.ScrollingDirection = Enum.ScrollingDirection.Y
+        if layout then
+            layout.FillDirection = Enum.FillDirection.Vertical
+            layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+        end
+        self._content.Position = UDim2.fromOffset(204, 78)
+        self._content.Size = UDim2.new(1, -224, 1, -98)
+        for _, tab in ipairs(self._tabs) do
+            tab.Button.Size = UDim2.new(1, 0, 0, 34)
+        end
+    end
+
+    self:ConstrainToViewport(viewportSize)
 end
 
 function Window:AddTab(name: string, icon: string?)

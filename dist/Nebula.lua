@@ -30,6 +30,7 @@ function Nebula.new(options: {[string]: any}?)
         Debug = options.Debug == true,
         _componentCount = 0,
         _destroyed = false,
+        _windows = {},
     }, Nebula)
     self.ThemeManager = Manager.new(options.Theme)
     self.Animations = Animator.new(options.ReducedMotion)
@@ -60,8 +61,42 @@ end
 function Nebula:CreateWindow(options: {[string]: any}?)
     assert(not self._destroyed, "Cannot create a window after Nebula:Destroy()")
     local window = Window.new(self._root, options or {}, self:GetTheme(), self.Animations, self.Maid)
+    table.insert(self._windows, window)
+    self:_addSettingsTab(window, options or {})
     self._componentCount += 1
+    self:_applyResponsive()
     return window
+end
+
+function Nebula:_addSettingsTab(window, options)
+    local settings = window:AddTab("UI Settings", "⚙")
+    settings:AddText("Every Nebula window includes these built-in UI settings.")
+
+    local appearance = settings:AddSurface({
+        Title = "Appearance",
+        Size = UDim2.new(1, 0, 0, 250),
+    })
+    for _, themeName in ipairs({ "Nebula Dark", "Nebula Light", "Midnight", "Graphite" }) do
+        appearance:AddButton({
+            Label = "Use " .. themeName,
+            OnClick = function()
+                self:SetTheme(themeName)
+                self:Toast(themeName .. " theme applied", "success")
+            end,
+        })
+    end
+
+    local behavior = settings:AddSurface({
+        Title = "Accessibility",
+        Size = UDim2.new(1, 0, 0, 120),
+    })
+    local reducedMotion = behavior:AddToggle({
+        Label = "Reduced motion",
+        Default = options.ReducedMotion == true,
+    })
+    reducedMotion:OnChanged(function(enabled)
+        self:SetReducedMotion(enabled)
+    end)
 end
 
 function Nebula:RegisterTheme(name: string, theme: {[string]: any})
@@ -133,21 +168,16 @@ function Nebula:_applyTheme(theme)
 end
 
 function Nebula:_applyResponsive()
-    if not self or not self._root or not self._root.Parent then return end
-    local compact = self._breakpoint == "Compact"
-    for _, child in ipairs(self._root:GetChildren()) do
-        if child.Name == "NebulaWindow" then
-            child.Size = compact and UDim2.new(1, -24, 1, -48) or UDim2.fromOffset(820, 520)
-            local navigation = child:FindFirstChild("Navigation")
-            local content = child:FindFirstChild("Content")
-            if navigation and navigation:IsA("GuiObject") then
-                navigation.Visible = not compact
-            end
-            if content and content:IsA("GuiObject") then
-                content.Position = compact and UDim2.fromOffset(16, 78) or UDim2.fromOffset(204, 78)
-                content.Size = compact and UDim2.new(1, -32, 1, -98) or UDim2.new(1, -224, 1, -98)
-            end
-        end
+    if not self or not self._root or not self._root.Parent then
+        return
+    end
+    local camera = workspace.CurrentCamera
+    if not camera then
+        return
+    end
+    local viewport = camera.ViewportSize
+    for _, window in ipairs(self._windows) do
+        window:ApplyResponsive(viewport, self._breakpoint)
     end
 end
 
@@ -615,11 +645,16 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     subtitle.TextXAlignment = Enum.TextXAlignment.Left
     subtitle.Parent = header
 
-    local nav = Instance.new("Frame")
+    local nav = Instance.new("ScrollingFrame")
     nav.Name = "Navigation"
     nav.BackgroundTransparency = 1
     nav.Position = UDim2.fromOffset(20, 78)
     nav.Size = UDim2.new(0, 164, 1, -98)
+    nav.BorderSizePixel = 0
+    nav.CanvasSize = UDim2.new()
+    nav.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    nav.ScrollBarThickness = 0
+    nav.ScrollingDirection = Enum.ScrollingDirection.Y
     nav.Parent = frame
     Layout.Column(nav, { Spacing = 6 })
     local content = Instance.new("ScrollingFrame")
@@ -643,27 +678,112 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     maid:Give(self)
 
     local dragging = false
+    local dragInput
     local dragStart: Vector2
-    local startPosition: UDim2
+    local startPosition: Vector2
     self.Maid:Give(header.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
+            dragInput = input
             dragStart = input.Position
-            startPosition = frame.Position
+            startPosition = frame.AbsolutePosition + frame.AbsoluteSize / 2
+        end
+    end))
+    self.Maid:Give(header.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
         end
     end))
     self.Maid:Give(UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        if dragging and (input == dragInput
+            or input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
-            frame.Position = UDim2.new(startPosition.X.Scale, startPosition.X.Offset + delta.X, startPosition.Y.Scale, startPosition.Y.Offset + delta.Y)
+            frame.Position = UDim2.fromOffset(
+                startPosition.X + delta.X,
+                startPosition.Y + delta.Y
+            )
+            self:ConstrainToViewport()
         end
     end))
     self.Maid:Give(UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input == dragInput
+            or input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
+            dragInput = nil
+            self:ConstrainToViewport()
         end
     end))
     return self
+end
+
+function Window:ConstrainToViewport(viewportSize: Vector2?)
+    local camera = workspace.CurrentCamera
+    local viewport = viewportSize or (camera and camera.ViewportSize)
+    if not viewport or not self.Instance or not self.Instance.Parent then
+        return
+    end
+
+    local frame = self.Instance
+    local halfWidth = frame.AbsoluteSize.X / 2
+    local halfHeight = frame.AbsoluteSize.Y / 2
+    local margin = 12
+    local position = frame.AbsolutePosition + frame.AbsoluteSize / 2
+    local minimumX = math.min(halfWidth + margin, viewport.X / 2)
+    local maximumX = math.max(viewport.X - halfWidth - margin, viewport.X / 2)
+    local minimumY = math.min(halfHeight + margin, viewport.Y / 2)
+    local maximumY = math.max(viewport.Y - halfHeight - margin, viewport.Y / 2)
+
+    frame.Position = UDim2.fromOffset(
+        math.clamp(position.X, minimumX, maximumX),
+        math.clamp(position.Y, minimumY, maximumY)
+    )
+end
+
+function Window:ApplyResponsive(viewportSize: Vector2, breakpoint: string)
+    if not self.Instance or not self.Instance.Parent then
+        return
+    end
+
+    local compact = breakpoint == "Compact" or viewportSize.X < 760
+    local width = math.max(math.min(820, viewportSize.X - (compact and 24 or 32)), 1)
+    local height = math.max(math.min(520, viewportSize.Y - (compact and 40 or 48)), 1)
+    self.Instance.Size = UDim2.fromOffset(width, height)
+
+    local layout = self._navigation:FindFirstChildOfClass("UIListLayout")
+    if compact then
+        self._navigation.Position = UDim2.fromOffset(12, 68)
+        self._navigation.Size = UDim2.new(1, -24, 0, 38)
+        self._navigation.AutomaticCanvasSize = Enum.AutomaticSize.X
+        self._navigation.ScrollingDirection = Enum.ScrollingDirection.X
+        if layout then
+            layout.FillDirection = Enum.FillDirection.Horizontal
+            layout.VerticalAlignment = Enum.VerticalAlignment.Center
+        end
+        self._content.Position = UDim2.fromOffset(12, 116)
+        self._content.Size = UDim2.new(1, -24, 1, -128)
+        for _, tab in ipairs(self._tabs) do
+            tab.Button.Size = UDim2.fromOffset(128, 34)
+        end
+    else
+        self._navigation.Position = UDim2.fromOffset(20, 78)
+        self._navigation.Size = UDim2.new(0, 164, 1, -98)
+        self._navigation.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        self._navigation.ScrollingDirection = Enum.ScrollingDirection.Y
+        if layout then
+            layout.FillDirection = Enum.FillDirection.Vertical
+            layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+        end
+        self._content.Position = UDim2.fromOffset(204, 78)
+        self._content.Size = UDim2.new(1, -224, 1, -98)
+        for _, tab in ipairs(self._tabs) do
+            tab.Button.Size = UDim2.new(1, 0, 0, 34)
+        end
+    end
+
+    self:ConstrainToViewport(viewportSize)
 end
 
 function Window:AddTab(name: string, icon: string?)

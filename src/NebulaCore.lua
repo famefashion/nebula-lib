@@ -22,6 +22,7 @@ function Nebula.new(options: {[string]: any}?)
         Debug = options.Debug == true,
         _componentCount = 0,
         _destroyed = false,
+        _windows = {},
     }, Nebula)
     self.ThemeManager = Manager.new(options.Theme)
     self.Animations = Animator.new(options.ReducedMotion)
@@ -52,8 +53,42 @@ end
 function Nebula:CreateWindow(options: {[string]: any}?)
     assert(not self._destroyed, "Cannot create a window after Nebula:Destroy()")
     local window = Window.new(self._root, options or {}, self:GetTheme(), self.Animations, self.Maid)
+    table.insert(self._windows, window)
+    self:_addSettingsTab(window, options or {})
     self._componentCount += 1
+    self:_applyResponsive()
     return window
+end
+
+function Nebula:_addSettingsTab(window, options)
+    local settings = window:AddTab("UI Settings", "⚙")
+    settings:AddText("Every Nebula window includes these built-in UI settings.")
+
+    local appearance = settings:AddSurface({
+        Title = "Appearance",
+        Size = UDim2.new(1, 0, 0, 250),
+    })
+    for _, themeName in ipairs({ "Nebula Dark", "Nebula Light", "Midnight", "Graphite" }) do
+        appearance:AddButton({
+            Label = "Use " .. themeName,
+            OnClick = function()
+                self:SetTheme(themeName)
+                self:Toast(themeName .. " theme applied", "success")
+            end,
+        })
+    end
+
+    local behavior = settings:AddSurface({
+        Title = "Accessibility",
+        Size = UDim2.new(1, 0, 0, 120),
+    })
+    local reducedMotion = behavior:AddToggle({
+        Label = "Reduced motion",
+        Default = options.ReducedMotion == true,
+    })
+    reducedMotion:OnChanged(function(enabled)
+        self:SetReducedMotion(enabled)
+    end)
 end
 
 function Nebula:RegisterTheme(name: string, theme: {[string]: any})
@@ -125,21 +160,16 @@ function Nebula:_applyTheme(theme)
 end
 
 function Nebula:_applyResponsive()
-    if not self or not self._root or not self._root.Parent then return end
-    local compact = self._breakpoint == "Compact"
-    for _, child in ipairs(self._root:GetChildren()) do
-        if child.Name == "NebulaWindow" then
-            child.Size = compact and UDim2.new(1, -24, 1, -48) or UDim2.fromOffset(820, 520)
-            local navigation = child:FindFirstChild("Navigation")
-            local content = child:FindFirstChild("Content")
-            if navigation and navigation:IsA("GuiObject") then
-                navigation.Visible = not compact
-            end
-            if content and content:IsA("GuiObject") then
-                content.Position = compact and UDim2.fromOffset(16, 78) or UDim2.fromOffset(204, 78)
-                content.Size = compact and UDim2.new(1, -32, 1, -98) or UDim2.new(1, -224, 1, -98)
-            end
-        end
+    if not self or not self._root or not self._root.Parent then
+        return
+    end
+    local camera = workspace.CurrentCamera
+    if not camera then
+        return
+    end
+    local viewport = camera.ViewportSize
+    for _, window in ipairs(self._windows) do
+        window:ApplyResponsive(viewport, self._breakpoint)
     end
 end
 

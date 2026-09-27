@@ -43,6 +43,7 @@ The sections below are interactive. Open a category to see the complete shipped 
 
 - [x] `Nebula.new(options)` application instance
 - [x] `CreateWindow(options?)` window factory
+- [x] Automatic `UI Settings` tab on every window
 - [x] `Destroy()` teardown for the complete UI tree
 - [x] `GetDiagnostics()` with component count, viewport, breakpoint, render mode, and active animations
 - [x] Debug flag and reduced-motion switch
@@ -127,9 +128,10 @@ The sections below are interactive. Open a category to see the complete shipped 
 <summary><strong>â Responsive behavior</strong> â desktop room without breaking touch</summary>
 
 - [x] `Compact`, `Regular`, and `Wide` viewport breakpoints
-- [x] Compact navigation collapse
+- [x] Compact horizontal, touch-scrollable navigation
 - [x] Safe window margins on small viewports
 - [x] Adaptive content positioning and sizing
+- [x] Mouse and touch dragging constrained to the viewport
 - [x] Touch-compatible `Activated` controls
 - [x] Camera viewport change handling
 
@@ -172,6 +174,9 @@ local window = app:CreateWindow({
     Title = "Signal Console",
     Subtitle = "Live systems overview",
 })
+
+-- Every window also receives a built-in "UI Settings" tab with
+-- theme and reduced-motion controls.
 
 local overview = window:AddTab("Overview", "â")
 local telemetry = overview:AddSurface({ Title = "Telemetry" })

@@ -8,6 +8,11 @@ import { buildBundle } from "./build-bundle.mjs";
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const bundlePath = path.join(projectRoot, "dist", "Nebula.lua");
 const sourceRoot = path.join(projectRoot, "src");
+const windowSource = fs.readFileSync(
+  path.join(sourceRoot, "Components", "Window.lua"),
+  "utf8",
+);
+const coreSource = fs.readFileSync(path.join(sourceRoot, "NebulaCore.lua"), "utf8");
 
 execFileSync(process.execPath, ["tools/build-bundle.mjs"], {
   cwd: projectRoot,
@@ -37,6 +42,12 @@ assert.equal(
 );
 assert.equal(factoryIds.length, secondBuild.moduleIds.length);
 assert.ok(factoryIds.includes("NebulaCore"), "entry module is missing");
+assert.match(coreSource, /window:AddTab\("UI Settings"/);
+assert.match(coreSource, /function Nebula:_addSettingsTab/);
+assert.match(windowSource, /Instance\.new\("ScrollingFrame"\)/);
+assert.match(windowSource, /Enum\.UserInputType\.Touch/);
+assert.match(windowSource, /function Window:ConstrainToViewport/);
+assert.match(windowSource, /function Window:ApplyResponsive/);
 
 const sourceModules = [];
 function collectLuaFiles(directory) {

@@ -62,21 +62,30 @@ end
 
 function Nebula:_addSettingsTab(window, options)
     local settings = window:AddTab("UI Settings", "⚙")
-    settings:AddText("Every Nebula window includes these built-in UI settings.")
+    settings:AddText("Built-in display controls for this Nebula window.")
 
-    local appearance = settings:AddSurface({
-        Title = "Appearance",
-        Size = UDim2.new(1, 0, 0, 250),
+    local display = settings:AddSurface({
+        Title = "Display mode",
+        Size = UDim2.new(1, 0, 0, 142),
     })
-    for _, themeName in ipairs({ "Nebula Dark", "Nebula Light", "Midnight", "Graphite" }) do
-        appearance:AddButton({
-            Label = "Use " .. themeName,
-            OnClick = function()
-                self:SetTheme(themeName)
-                self:Toast(themeName .. " theme applied", "success")
-            end,
-        })
-    end
+    display:AddText(
+        options.Adornee
+            and "Switch between a ScreenGui and a SurfaceGui without rebuilding your window."
+            or "2D is active. Pass Adornee = a BasePart to enable 3D surface mode.",
+        { Height = 36, TextSize = 12 }
+    )
+    local surfaceMode = display:AddToggle({
+        Label = "Use 3D surface UI",
+        Default = self.Root.Mode == "3D",
+    })
+    surfaceMode:OnChanged(function(enabled)
+        if enabled and not self.Root.Options.Adornee then
+            surfaceMode:Set(false)
+            self:Toast("3D mode needs options.Adornee = a BasePart", "warning")
+            return
+        end
+        self:SetRenderMode(enabled and "3D" or "2D")
+    end)
 
     local behavior = settings:AddSurface({
         Title = "Accessibility",
@@ -126,8 +135,15 @@ function Nebula:SetRenderMode(mode: string, options: {[string]: any}?)
     self.Root:SetMode(mode, options)
     self._root = self.Root.Instance
     assert(self._root, "Nebula render root was not created")
+    if self.Toasts then
+        self.Toasts._root = self._root
+    end
+    if self.Commands then
+        self.Commands._root = self._root
+    end
     self.Toasts = ToastStack.new(self._root, self:GetTheme(), self.Animations, self.Maid)
     self.Commands = Command.new(self._root, commands, self:GetTheme(), self.Animations, self.Maid)
+    self:_applyResponsive()
 end
 
 function Nebula:SetDebug(enabled: boolean)

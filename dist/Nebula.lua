@@ -70,21 +70,30 @@ end
 
 function Nebula:_addSettingsTab(window, options)
     local settings = window:AddTab("UI Settings", "⚙")
-    settings:AddText("Every Nebula window includes these built-in UI settings.")
+    settings:AddText("Built-in display controls for this Nebula window.")
 
-    local appearance = settings:AddSurface({
-        Title = "Appearance",
-        Size = UDim2.new(1, 0, 0, 250),
+    local display = settings:AddSurface({
+        Title = "Display mode",
+        Size = UDim2.new(1, 0, 0, 142),
     })
-    for _, themeName in ipairs({ "Nebula Dark", "Nebula Light", "Midnight", "Graphite" }) do
-        appearance:AddButton({
-            Label = "Use " .. themeName,
-            OnClick = function()
-                self:SetTheme(themeName)
-                self:Toast(themeName .. " theme applied", "success")
-            end,
-        })
-    end
+    display:AddText(
+        options.Adornee
+            and "Switch between a ScreenGui and a SurfaceGui without rebuilding your window."
+            or "2D is active. Pass Adornee = a BasePart to enable 3D surface mode.",
+        { Height = 36, TextSize = 12 }
+    )
+    local surfaceMode = display:AddToggle({
+        Label = "Use 3D surface UI",
+        Default = self.Root.Mode == "3D",
+    })
+    surfaceMode:OnChanged(function(enabled)
+        if enabled and not self.Root.Options.Adornee then
+            surfaceMode:Set(false)
+            self:Toast("3D mode needs options.Adornee = a BasePart", "warning")
+            return
+        end
+        self:SetRenderMode(enabled and "3D" or "2D")
+    end)
 
     local behavior = settings:AddSurface({
         Title = "Accessibility",
@@ -134,8 +143,15 @@ function Nebula:SetRenderMode(mode: string, options: {[string]: any}?)
     self.Root:SetMode(mode, options)
     self._root = self.Root.Instance
     assert(self._root, "Nebula render root was not created")
+    if self.Toasts then
+        self.Toasts._root = self._root
+    end
+    if self.Commands then
+        self.Commands._root = self._root
+    end
     self.Toasts = ToastStack.new(self._root, self:GetTheme(), self.Animations, self.Maid)
     self.Commands = Command.new(self._root, commands, self:GetTheme(), self.Animations, self.Maid)
+    self:_applyResponsive()
 end
 
 function Nebula:SetDebug(enabled: boolean)
@@ -625,6 +641,14 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     header.Position = UDim2.fromOffset(20, 16)
     header.Size = UDim2.new(1, -40, 0, 42)
     header.Parent = frame
+    local headerRule = Instance.new("Frame")
+    headerRule.Name = "HeaderRule"
+    headerRule.BackgroundColor3 = theme.Border
+    headerRule.BackgroundTransparency = 0.35
+    headerRule.BorderSizePixel = 0
+    headerRule.Position = UDim2.fromOffset(0, 62)
+    headerRule.Size = UDim2.new(1, 0, 0, 1)
+    headerRule.Parent = frame
     local title = Instance.new("TextLabel")
     title.BackgroundTransparency = 1
     title.Size = UDim2.new(1, 0, 0, 22)
@@ -656,6 +680,15 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     nav.ScrollBarThickness = 0
     nav.ScrollingDirection = Enum.ScrollingDirection.Y
     nav.Parent = frame
+    nav.BackgroundColor3 = theme.Background
+    nav.BackgroundTransparency = 0.25
+    local navCorner = Instance.new("UICorner")
+    navCorner.CornerRadius = UDim.new(0, theme.CornerRadius)
+    navCorner.Parent = nav
+    local navStroke = Instance.new("UIStroke")
+    navStroke.Color = theme.Border
+    navStroke.Transparency = 0.35
+    navStroke.Parent = nav
     Layout.Column(nav, { Spacing = 6 })
     local content = Instance.new("ScrollingFrame")
     content.Name = "Content"
@@ -665,6 +698,7 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     content.BorderSizePixel = 0
     content.ScrollBarThickness = 3
     content.ScrollBarImageColor3 = theme.Accent
+    content.ScrollBarImageTransparency = 0.35
     content.AutomaticCanvasSize = Enum.AutomaticSize.Y
     content.CanvasSize = UDim2.new()
     content.Parent = frame
@@ -805,6 +839,10 @@ function Window:AddTab(name: string, icon: string?)
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = tabButton
+    local tabStroke = Instance.new("UIStroke")
+    tabStroke.Color = self.Theme.Border
+    tabStroke.Transparency = 0.55
+    tabStroke.Parent = tabButton
 
     local page = Instance.new("Frame")
     page.Name = name .. "Page"
@@ -818,6 +856,7 @@ function Window:AddTab(name: string, icon: string?)
         Name = name,
         Page = page,
         Button = tabButton,
+        ButtonStroke = tabStroke,
         _window = self,
         Maid = require("Core.Maid").new(),
     }, { __index = require("Components.Tab") })
@@ -840,6 +879,8 @@ function Window:SelectTab(tab)
         item.Button.BackgroundTransparency = active and 0 or 0.4
         item.Button.BackgroundColor3 = active and self.Theme.Accent or self.Theme.SurfaceSecondary
         item.Button.TextColor3 = active and self.Theme.Background or self.Theme.TextSecondary
+        item.ButtonStroke.Color = active and self.Theme.Accent or self.Theme.Border
+        item.ButtonStroke.Transparency = active and 0.05 or 0.55
         if active then
             local scale = item.Page:FindFirstChildOfClass("UIScale") or Instance.new("UIScale")
             scale.Scale = 0.97
@@ -950,6 +991,7 @@ function Button.new(parent: Instance, options: {[string]: any}, theme, animation
     button.Text = options.Label or "Button"
     button.TextColor3 = theme.Text
     button.TextSize = 13
+    button.TextTruncate = Enum.TextTruncate.AtEnd
     button.Parent = parent
     local scale = Instance.new("UIScale")
     scale.Scale = 0.96
@@ -957,16 +999,22 @@ function Button.new(parent: Instance, options: {[string]: any}, theme, animation
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, theme.CornerRadius - 3)
     corner.Parent = button
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = theme.Border
+    stroke.Transparency = 0.15
+    stroke.Parent = button
     local self = Component.new(button, theme, animations)
     setmetatable(self, Button)
     animations:Scale(button, 1, "spring")
 
     self.Maid:Give(button.MouseEnter:Connect(function()
-        animations:Play(button, { BackgroundColor3 = theme.Border }, "quick")
-        animations:Scale(button, 1.025, "quick")
+        animations:Play(button, { BackgroundColor3 = theme.Surface }, "quick")
+        animations:Play(stroke, { Transparency = 0 }, "quick")
+        animations:Scale(button, 1.015, "quick")
     end))
     self.Maid:Give(button.MouseLeave:Connect(function()
         animations:Play(button, { BackgroundColor3 = theme.SurfaceSecondary }, "quick")
+        animations:Play(stroke, { Transparency = 0.15 }, "quick")
         animations:Scale(button, 1, "quick")
     end))
     self.Maid:Give(button.Activated:Connect(function()
@@ -1008,6 +1056,7 @@ function Slider.new(parent: Instance, options: {[string]: any}, theme, animation
     label.Text = options.Label or "Slider"
     label.TextColor3 = theme.TextSecondary
     label.TextSize = 13
+    label.TextTruncate = Enum.TextTruncate.AtEnd
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = holder
     local readout = label:Clone()
@@ -1221,6 +1270,7 @@ function Toggle.new(parent: Instance, options: {[string]: any}, theme, animation
     label.Text = options.Label or "Toggle"
     label.TextColor3 = theme.TextSecondary
     label.TextSize = 13
+    label.TextTruncate = Enum.TextTruncate.AtEnd
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = row
 
@@ -1407,8 +1457,12 @@ function Root.new(mode: string?, options: {[string]: any}, maid)
 end
 
 function Root:_create()
-    if self.Instance and self.Instance.Parent then
-        self.Instance:Destroy()
+    local previous = self.Instance
+    local preservedChildren = {}
+    if previous then
+        for _, child in ipairs(previous:GetChildren()) do
+            table.insert(preservedChildren, child)
+        end
     end
     local playerGui = self.Options.Parent
     local mode = self.Mode
@@ -1438,6 +1492,12 @@ function Root:_create()
             overlay.Parent = playerGui
             self._maid:Give(overlay)
         end
+    end
+    for _, child in ipairs(preservedChildren) do
+        child.Parent = container
+    end
+    if previous and previous.Parent then
+        previous:Destroy()
     end
     self.Instance = container
     self._maid:Give(container)
@@ -1541,17 +1601,17 @@ local function color(hex: string): Color3
 end
 
 local base = {
-    Accent = color("#A995FF"),
-    AccentSecondary = color("#5DD5CC"),
-    Background = color("#0C1020"),
-    BackgroundSecondary = color("#11172B"),
-    Surface = color("#171E35"),
-    SurfaceSecondary = color("#1D2743"),
-    Text = color("#F4F1FF"),
-    TextSecondary = color("#B7B9D0"),
-    TextMuted = color("#737A9A"),
-    Border = color("#303958"),
-    BorderHover = color("#6470A0"),
+    Accent = color("#E8ECF2"),
+    AccentSecondary = color("#9BA8B8"),
+    Background = color("#090A0C"),
+    BackgroundSecondary = color("#111318"),
+    Surface = color("#171A20"),
+    SurfaceSecondary = color("#1E222A"),
+    Text = color("#F5F6F8"),
+    TextSecondary = color("#B2B8C2"),
+    TextMuted = color("#737B87"),
+    Border = color("#2B313A"),
+    BorderHover = color("#566170"),
     Success = color("#62D7B5"),
     Warning = color("#F2C977"),
     Error = color("#F47E98"),

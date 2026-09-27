@@ -25,6 +25,7 @@ function Slider.new(parent: Instance, options: {[string]: any}, theme, animation
     label.Text = options.Label or "Slider"
     label.TextColor3 = theme.TextSecondary
     label.TextSize = 13
+    label.TextTruncate = Enum.TextTruncate.AtEnd
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = holder
     local readout = label:Clone()

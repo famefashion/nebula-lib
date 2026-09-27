@@ -22,6 +22,7 @@ function Toggle.new(parent: Instance, options: {[string]: any}, theme, animation
     label.Text = options.Label or "Toggle"
     label.TextColor3 = theme.TextSecondary
     label.TextSize = 13
+    label.TextTruncate = Enum.TextTruncate.AtEnd
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = row
 

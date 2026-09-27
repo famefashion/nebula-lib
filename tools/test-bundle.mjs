@@ -13,6 +13,14 @@ const windowSource = fs.readFileSync(
   "utf8",
 );
 const coreSource = fs.readFileSync(path.join(sourceRoot, "NebulaCore.lua"), "utf8");
+const rootSource = fs.readFileSync(
+  path.join(sourceRoot, "Rendering", "Root.lua"),
+  "utf8",
+);
+const presetsSource = fs.readFileSync(
+  path.join(sourceRoot, "Theme", "Presets.lua"),
+  "utf8",
+);
 
 execFileSync(process.execPath, ["tools/build-bundle.mjs"], {
   cwd: projectRoot,
@@ -44,10 +52,15 @@ assert.equal(factoryIds.length, secondBuild.moduleIds.length);
 assert.ok(factoryIds.includes("NebulaCore"), "entry module is missing");
 assert.match(coreSource, /window:AddTab\("UI Settings"/);
 assert.match(coreSource, /function Nebula:_addSettingsTab/);
+assert.match(coreSource, /Use 3D surface UI/);
+assert.doesNotMatch(coreSource, /Use Nebula Dark/);
 assert.match(windowSource, /Instance\.new\("ScrollingFrame"\)/);
 assert.match(windowSource, /Enum\.UserInputType\.Touch/);
 assert.match(windowSource, /function Window:ConstrainToViewport/);
 assert.match(windowSource, /function Window:ApplyResponsive/);
+assert.match(rootSource, /preservedChildren/);
+assert.match(presetsSource, /Accent = color\("#E8ECF2"\)/);
+assert.match(presetsSource, /Background = color\("#090A0C"\)/);
 
 const sourceModules = [];
 function collectLuaFiles(directory) {

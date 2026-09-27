@@ -176,7 +176,7 @@ local window = app:CreateWindow({
 })
 
 -- Every window also receives a built-in "UI Settings" tab with
--- theme and reduced-motion controls.
+-- 2D/3D display-mode and reduced-motion controls.
 
 local overview = window:AddTab("Overview", "â")
 local telemetry = overview:AddSurface({ Title = "Telemetry" })
@@ -275,6 +275,11 @@ factory per reachable module, and writes `dist/Nebula.lua`. The checks verify th
 the output is deterministic, has no unresolved `require(script...)` calls, does
 not duplicate modules, returns the Nebula API, and keeps the documented public
 methods—including `Nebula.VERSION`.
+
+Every window adds a built-in `UI Settings` tab. It controls 2D versus 3D surface
+rendering when an `Adornee` is provided and includes reduced-motion support;
+themes remain part of the application API rather than being forced into the
+settings tab.
 
 ## â Orbit map
 

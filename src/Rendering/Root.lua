@@ -17,8 +17,12 @@ function Root.new(mode: string?, options: {[string]: any}, maid)
 end
 
 function Root:_create()
-    if self.Instance and self.Instance.Parent then
-        self.Instance:Destroy()
+    local previous = self.Instance
+    local preservedChildren = {}
+    if previous then
+        for _, child in ipairs(previous:GetChildren()) do
+            table.insert(preservedChildren, child)
+        end
     end
     local playerGui = self.Options.Parent
     local mode = self.Mode
@@ -48,6 +52,12 @@ function Root:_create()
             overlay.Parent = playerGui
             self._maid:Give(overlay)
         end
+    end
+    for _, child in ipairs(preservedChildren) do
+        child.Parent = container
+    end
+    if previous and previous.Parent then
+        previous:Destroy()
     end
     self.Instance = container
     self._maid:Give(container)

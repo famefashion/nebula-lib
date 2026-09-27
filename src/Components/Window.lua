@@ -36,6 +36,14 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     header.Position = UDim2.fromOffset(20, 16)
     header.Size = UDim2.new(1, -40, 0, 42)
     header.Parent = frame
+    local headerRule = Instance.new("Frame")
+    headerRule.Name = "HeaderRule"
+    headerRule.BackgroundColor3 = theme.Border
+    headerRule.BackgroundTransparency = 0.35
+    headerRule.BorderSizePixel = 0
+    headerRule.Position = UDim2.fromOffset(0, 62)
+    headerRule.Size = UDim2.new(1, 0, 0, 1)
+    headerRule.Parent = frame
     local title = Instance.new("TextLabel")
     title.BackgroundTransparency = 1
     title.Size = UDim2.new(1, 0, 0, 22)
@@ -67,6 +75,15 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     nav.ScrollBarThickness = 0
     nav.ScrollingDirection = Enum.ScrollingDirection.Y
     nav.Parent = frame
+    nav.BackgroundColor3 = theme.Background
+    nav.BackgroundTransparency = 0.25
+    local navCorner = Instance.new("UICorner")
+    navCorner.CornerRadius = UDim.new(0, theme.CornerRadius)
+    navCorner.Parent = nav
+    local navStroke = Instance.new("UIStroke")
+    navStroke.Color = theme.Border
+    navStroke.Transparency = 0.35
+    navStroke.Parent = nav
     Layout.Column(nav, { Spacing = 6 })
     local content = Instance.new("ScrollingFrame")
     content.Name = "Content"
@@ -76,6 +93,7 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     content.BorderSizePixel = 0
     content.ScrollBarThickness = 3
     content.ScrollBarImageColor3 = theme.Accent
+    content.ScrollBarImageTransparency = 0.35
     content.AutomaticCanvasSize = Enum.AutomaticSize.Y
     content.CanvasSize = UDim2.new()
     content.Parent = frame
@@ -216,6 +234,10 @@ function Window:AddTab(name: string, icon: string?)
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = tabButton
+    local tabStroke = Instance.new("UIStroke")
+    tabStroke.Color = self.Theme.Border
+    tabStroke.Transparency = 0.55
+    tabStroke.Parent = tabButton
 
     local page = Instance.new("Frame")
     page.Name = name .. "Page"
@@ -229,6 +251,7 @@ function Window:AddTab(name: string, icon: string?)
         Name = name,
         Page = page,
         Button = tabButton,
+        ButtonStroke = tabStroke,
         _window = self,
         Maid = require(script.Parent.Parent.Core.Maid).new(),
     }, { __index = require(script.Parent.Tab) })
@@ -251,6 +274,8 @@ function Window:SelectTab(tab)
         item.Button.BackgroundTransparency = active and 0 or 0.4
         item.Button.BackgroundColor3 = active and self.Theme.Accent or self.Theme.SurfaceSecondary
         item.Button.TextColor3 = active and self.Theme.Background or self.Theme.TextSecondary
+        item.ButtonStroke.Color = active and self.Theme.Accent or self.Theme.Border
+        item.ButtonStroke.Transparency = active and 0.05 or 0.55
         if active then
             local scale = item.Page:FindFirstChildOfClass("UIScale") or Instance.new("UIScale")
             scale.Scale = 0.97

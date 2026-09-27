@@ -34,7 +34,7 @@ function Root:_create()
     if mode == "2D" then
         container = Instance.new("ScreenGui")
         container.ResetOnSpawn = false
-        container.IgnoreGuiInset = true
+        container.IgnoreGuiInset = false
         container.DisplayOrder = self.Options.DisplayOrder or 20
         container.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         container.Parent = playerGui
@@ -51,7 +51,7 @@ function Root:_create()
         if mode == "Hybrid" then
             local overlay = Instance.new("ScreenGui")
             overlay.ResetOnSpawn = false
-            overlay.IgnoreGuiInset = true
+            overlay.IgnoreGuiInset = false
             overlay.DisplayOrder = self.Options.DisplayOrder or 20
             overlay.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
             overlay.Parent = playerGui

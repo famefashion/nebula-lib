@@ -60,4 +60,8 @@ function ToastStack:Push(message: string, kind: string?, duration: number?)
     return toast
 end
 
+function ToastStack:Destroy()
+    Component.Destroy(self)
+end
+
 return ToastStack

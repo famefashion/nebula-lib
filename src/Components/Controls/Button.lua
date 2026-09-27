@@ -30,24 +30,37 @@ function Button.new(parent: Instance, options: {[string]: any}, theme, animation
     stroke.Parent = button
     local self = Component.new(button, theme, animations)
     setmetatable(self, Button)
-    animations:Scale(button, 1, "spring")
-
-    self.Maid:Give(button.MouseEnter:Connect(function()
-        animations:Play(button, { BackgroundColor3 = theme.Surface }, "quick")
-        animations:Play(stroke, { Transparency = 0 }, "quick")
-        animations:Scale(button, 1.015, "quick")
-    end))
-    self.Maid:Give(button.MouseLeave:Connect(function()
-        animations:Play(button, { BackgroundColor3 = theme.SurfaceSecondary }, "quick")
-        animations:Play(stroke, { Transparency = 0.15 }, "quick")
-        animations:Scale(button, 1, "quick")
-    end))
-    self.Maid:Give(button.Activated:Connect(function()
-        if options.OnClick then
-            options.OnClick()
-        end
-    end))
+    self._selected = false
+    local hovered = false
+    local function render()
+        local selected = self._selected
+        animations:Play(button, { BackgroundColor3 = selected and theme.Accent or (hovered and theme.Surface or theme.SurfaceSecondary), TextColor3 = selected and theme.Background or theme.Text }, "quick")
+        animations:Play(stroke, { Color = selected and theme.Accent or theme.Border, Transparency = selected and 0.05 or (hovered and 0 or 0.15) }, "quick")
+        animations:Scale(button, selected and 1 or (hovered and 1.015 or 1), "quick")
+    end
+    self.Maid:Give(button.MouseEnter:Connect(function() hovered = true; render() end))
+    self.Maid:Give(button.MouseLeave:Connect(function() hovered = false; render() end))
+    self.Maid:Give(button.Activated:Connect(function() if options.OnClick then options.OnClick() end end))
+    render()
     return self
+end
+
+function Button:SetSelected(selected: boolean)
+    self._selected = selected == true
+    local button = self.Instance
+    if button and button.Parent then
+        local stroke = button:FindFirstChildOfClass("UIStroke")
+        button.BackgroundColor3 = self._selected and self.Theme.Accent or self.Theme.SurfaceSecondary
+        button.TextColor3 = self._selected and self.Theme.Background or self.Theme.Text
+        if stroke then
+            stroke.Color = self._selected and self.Theme.Accent or self.Theme.Border
+            stroke.Transparency = self._selected and 0.05 or 0.15
+        end
+    end
+end
+
+function Button:IsSelected(): boolean
+    return self._selected == true
 end
 
 return Button

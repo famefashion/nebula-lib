@@ -10,25 +10,28 @@ function Toggle.new(parent: Instance, options: {[string]: any}, theme, animation
     local row = Instance.new("TextButton")
     row.Name = options.Label or "Toggle"
     row.AutoButtonColor = false
+    row.Active = true
+    row.Selectable = true
     row.BackgroundTransparency = 1
-    row.Size = UDim2.new(1, 0, 0, theme.ControlHeight)
+    row.Size = UDim2.new(1, 0, 0, options.Height or theme.ControlHeight)
     row.Text = ""
     row.Parent = parent
 
     local label = Instance.new("TextLabel")
     label.BackgroundTransparency = 1
-    label.Size = UDim2.new(1, -58, 1, 0)
+    label.Size = UDim2.new(1, -70, 1, 0)
     label.Font = Enum.Font.Gotham
     label.Text = options.Label or "Toggle"
     label.TextColor3 = theme.TextSecondary
     label.TextSize = 13
+    label.TextWrapped = true
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = row
 
     local track = Instance.new("Frame")
     track.AnchorPoint = Vector2.new(1, 0.5)
     track.Position = UDim2.new(1, 0, 0.5, 0)
-    track.Size = UDim2.fromOffset(42, 22)
+    track.Size = UDim2.fromOffset(46, 24)
     track.BackgroundColor3 = theme.Border
     track.BorderSizePixel = 0
     track.Parent = row
@@ -36,7 +39,7 @@ function Toggle.new(parent: Instance, options: {[string]: any}, theme, animation
     trackCorner.CornerRadius = UDim.new(1, 0)
     trackCorner.Parent = track
     local knob = Instance.new("Frame")
-    knob.Size = UDim2.fromOffset(16, 16)
+    knob.Size = UDim2.fromOffset(18, 18)
     knob.Position = UDim2.fromOffset(3, 3)
     knob.BackgroundColor3 = theme.Text
     knob.BorderSizePixel = 0
@@ -51,7 +54,7 @@ function Toggle.new(parent: Instance, options: {[string]: any}, theme, animation
 
     local function render(value: boolean)
         animations:Play(track, { BackgroundColor3 = value and theme.Accent or theme.Border }, "quick")
-        animations:Play(knob, { Position = value and UDim2.fromOffset(23, 3) or UDim2.fromOffset(3, 3) }, "quick")
+        animations:Play(knob, { Position = value and UDim2.fromOffset(25, 3) or UDim2.fromOffset(3, 3) }, "quick")
     end
     render(self.Value:Get())
     self.Maid:Give(self.Value:Subscribe(function(value)

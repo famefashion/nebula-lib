@@ -4,9 +4,9 @@ Nebula uses the active camera's viewport width to select:
 
 | Breakpoint | Width | Behavior |
 | --- | ---: | --- |
-| Compact | `< 640` or touch viewport `< 1100` | Floating mobile card with a touch-sized tab drawer |
-| Regular | `640–1023` | Standard window sizing with a vertical navigation rail |
-| Wide | `>= 1024` | Larger window with room for navigation and content |
+| Compact | `< 720` or touch viewport `< 1100` | Smaller floating mobile card with a touch-sized tab drawer |
+| Regular | `720–1099` | Standard window sizing with a vertical navigation rail |
+| Wide | `>= 1100` | Larger window with room for navigation and content |
 
 The root listens to camera viewport changes. Touch devices use compact navigation
 through tablet widths instead of forcing a desktop sidebar onto a landscape tablet.

@@ -312,4 +312,8 @@ function Window:SetResponsive(compact: boolean)
     end
 end
 
+function Window:ApplyResponsive(_viewport, breakpoint: string)
+    self:SetResponsive(breakpoint == "Compact")
+end
+
 return Window

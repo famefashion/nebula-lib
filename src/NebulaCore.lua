@@ -12,7 +12,7 @@ local Responsive = require(script.Utilities.Responsive)
 
 local Nebula = {}
 Nebula.__index = Nebula
-Nebula.VERSION = "0.1.0"
+Nebula.VERSION = "0.2.0"
 
 function Nebula.new(options: {[string]: any}?)
     options = options or {}
@@ -23,6 +23,8 @@ function Nebula.new(options: {[string]: any}?)
         _componentCount = 0,
         _destroyed = false,
         _windows = {},
+        _renderModeTransitioning = false,
+        _queuedRenderMode = nil,
     }, Nebula)
     self.ThemeManager = Manager.new(options.Theme)
     self.Animations = Animator.new(options.ReducedMotion)
@@ -34,7 +36,7 @@ function Nebula.new(options: {[string]: any}?)
         Face = options.Face,
         PixelsPerStud = options.PixelsPerStud,
         DisplayOrder = options.DisplayOrder,
-    }, self.Maid)
+    }, self.Maid, self.Animations)
     self._root = self.Root.Instance
     self.Toasts = ToastStack.new(self._root, self:GetTheme(), self.Animations, self.Maid)
     self.Commands = Command.new(self._root, options.Commands, self:GetTheme(), self.Animations, self.Maid)
@@ -62,43 +64,34 @@ end
 
 function Nebula:_addSettingsTab(window, options)
     local settings = window:AddTab("UI Settings", "⚙")
-    settings:AddText("Built into every Nebula window. Use the controls below to adapt the interface to your device.")
-
-    local display = settings:AddSurface({
-        Title = "Display mode",
-    })
-    local adornee = self.Root.Options.Adornee
-    local canUse3D = adornee and adornee:IsA("BasePart")
-    display:AddText(
-        canUse3D
-            and "Switch between a ScreenGui and a SurfaceGui without rebuilding this window."
-            or "2D is active. Pass Adornee = a BasePart when creating Nebula to enable 3D mode.",
-        { Height = 36, TextSize = 12 }
-    )
-    local surfaceMode = display:AddToggle({
-        Label = "Use 3D surface UI",
-        Default = self.Root.Mode ~= "2D",
-    })
-    window._displayModeToggle = surfaceMode
-    surfaceMode:OnChanged(function(enabled)
-        if enabled and not self.Root.Options.Adornee then
-            surfaceMode:Set(false)
-            self:Toast("3D mode needs options.Adornee = a BasePart", "warning")
-            return
-        end
-        self:SetRenderMode(enabled and "3D" or "2D")
-    end)
-
-    local behavior = settings:AddSurface({
-        Title = "Accessibility",
-    })
-    local reducedMotion = behavior:AddToggle({
-        Label = "Reduced motion",
-        Default = options.ReducedMotion == true,
-    })
-    reducedMotion:OnChanged(function(enabled)
-        self:SetReducedMotion(enabled)
-    end)
+    settings:AddText("Choose where Nebula renders. The selected mode stays active while the window is rebuilt in place.")
+    local display = settings:AddSurface({ Title = "Display mode" })
+    local modeDefinitions = {
+        { Mode = "2D", Label = "▣  2D · Screen overlay" },
+        { Mode = "3D", Label = "◇  3D · SurfaceGui on a part" },
+        { Mode = "Hybrid", Label = "◈  Hybrid · Surface + screen overlay" },
+    }
+    local modeButtons = {}
+    for _, definition in ipairs(modeDefinitions) do
+        local mode = definition.Mode
+        local button = display:AddButton({
+            Label = definition.Label,
+            OnClick = function()
+                local adornee = self.Root.Options.Adornee
+                if mode ~= "2D" and not (adornee and adornee:IsA("BasePart")) then
+                    self:Toast("3D and Hybrid modes need options.Adornee = a BasePart", "warning")
+                    return
+                end
+                self:SetRenderMode(mode)
+            end,
+        })
+        button:SetSelected(self.Root.Mode == mode)
+        modeButtons[mode] = button
+    end
+    window._displayModeButtons = modeButtons
+    local behavior = settings:AddSurface({ Title = "Accessibility" })
+    local reducedMotion = behavior:AddToggle({ Label = "Reduced motion", Default = options.ReducedMotion == true })
+    reducedMotion:OnChanged(function(enabled) self:SetReducedMotion(enabled) end)
 end
 
 function Nebula:RegisterTheme(name: string, theme: {[string]: any})
@@ -123,33 +116,33 @@ end
 
 function Nebula:SetRenderMode(mode: string, options: {[string]: any}?)
     assert(not self._destroyed, "Cannot change render mode after Nebula:Destroy()")
-    if mode == self.Root.Mode and not options then
+    assert(mode == "2D" or mode == "3D" or mode == "Hybrid", ("Unsupported Nebula render mode: %s"):format(tostring(mode)))
+    if self._renderModeTransitioning then
+        self._queuedRenderMode = { Mode = mode, Options = options }
         return
     end
-    local commands = self.Commands and self.Commands._commands
-    if self.Toasts then
-        self.Toasts:Destroy()
-    end
-    if self.Commands then
-        self.Commands:Destroy()
-    end
-    self.Root:SetMode(mode, options)
-    self._root = self.Root.Instance
-    assert(self._root, "Nebula render root was not created")
-    if self.Toasts then
-        self.Toasts._root = self._root
-    end
-    if self.Commands then
-        self.Commands._root = self._root
-    end
-    self.Toasts = ToastStack.new(self._root, self:GetTheme(), self.Animations, self.Maid)
-    self.Commands = Command.new(self._root, commands, self:GetTheme(), self.Animations, self.Maid)
-    for _, window in ipairs(self._windows) do
-        if window._displayModeToggle then
-            window._displayModeToggle:Set(mode ~= "2D")
+    if mode == self.Root.Mode and not options then return end
+    self._renderModeTransitioning = true
+    local function applyMode()
+        if self._destroyed then return end
+        local commands = self.Commands and self.Commands._commands
+        if self.Toasts then self.Toasts:Destroy() end
+        if self.Commands then self.Commands:Destroy() end
+        self.Root:SetMode(mode, options)
+        self._root = self.Root.Instance
+        assert(self._root, "Nebula render root was not created")
+        self.Toasts = ToastStack.new(self._root, self:GetTheme(), self.Animations, self.Maid)
+        self.Commands = Command.new(self._root, commands, self:GetTheme(), self.Animations, self.Maid)
+        for _, window in ipairs(self._windows) do
+            for buttonMode, button in pairs(window._displayModeButtons or {}) do button:SetSelected(buttonMode == mode) end
         end
+        self:_applyResponsive()
+        self._renderModeTransitioning = false
+        local queued = self._queuedRenderMode
+        self._queuedRenderMode = nil
+        if queued then self:SetRenderMode(queued.Mode, queued.Options) end
     end
-    self:_applyResponsive()
+    if self.Root.Mode ~= "2D" then self.Root:AnimateExit(applyMode) else applyMode() end
 end
 
 function Nebula:SetDebug(enabled: boolean)

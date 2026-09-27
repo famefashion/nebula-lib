@@ -79,4 +79,20 @@ function Surface:AddSlider(options: {[string]: any})
     return slider
 end
 
+function Surface:AddText(text: string, options: {[string]: any}?)
+    local label = Instance.new("TextLabel")
+    label.BackgroundTransparency = 1
+    label.Size = UDim2.new(1, 0, 0, options and options.Height or 24)
+    label.AutomaticSize = options and options.Height and Enum.AutomaticSize.None or Enum.AutomaticSize.Y
+    label.Font = options and options.Font or Enum.Font.Gotham
+    label.Text = text
+    label.TextColor3 = options and options.Color or self.Theme.TextSecondary
+    label.TextSize = options and options.TextSize or 13
+    label.TextWrapped = true
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = self.Content
+    self.Maid:Give(label)
+    return label
+end
+
 return Surface

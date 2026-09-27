@@ -8,13 +8,16 @@ Surface.__index = Surface
 setmetatable(Surface, Component)
 
 function Surface.new(parent: Instance, options: {[string]: any}, theme, animations)
+    local hasExplicitSize = options.Size ~= nil
     local frame = Instance.new("Frame")
     frame.Name = options.Title or "Surface"
     frame.BackgroundColor3 = theme.Surface
     frame.BackgroundTransparency = theme.Transparency
     frame.BorderSizePixel = 0
-    frame.Size = options.Size or UDim2.new(1, 0, 0, 160)
+    frame.Size = options.Size or UDim2.new(1, 0, 0, 0)
+    frame.AutomaticSize = hasExplicitSize and Enum.AutomaticSize.None or Enum.AutomaticSize.Y
     frame.LayoutOrder = options.LayoutOrder or 0
+    frame.ClipsDescendants = true
     frame.Parent = parent
 
     local corner = Instance.new("UICorner")
@@ -23,7 +26,8 @@ function Surface.new(parent: Instance, options: {[string]: any}, theme, animatio
 
     local stroke = Instance.new("UIStroke")
     stroke.Color = theme.Border
-    stroke.Transparency = 0.2
+    stroke.Transparency = 0.42
+    stroke.Thickness = 1
     stroke.Parent = frame
 
     local self = Component.new(frame, theme, animations)
@@ -32,7 +36,8 @@ function Surface.new(parent: Instance, options: {[string]: any}, theme, animatio
     self.Content.Name = "Content"
     self.Content.BackgroundTransparency = 1
     self.Content.Position = UDim2.fromOffset(16, options.Title and 46 or 16)
-    self.Content.Size = UDim2.new(1, -32, 1, options.Title and -62 or -32)
+    self.Content.Size = UDim2.new(1, -32, 0, hasExplicitSize and (options.Title and -62 or -32) or 0)
+    self.Content.AutomaticSize = hasExplicitSize and Enum.AutomaticSize.None or Enum.AutomaticSize.Y
     self.Content.Parent = frame
     Layout.Column(self.Content, { Spacing = 8 })
 
@@ -46,6 +51,7 @@ function Surface.new(parent: Instance, options: {[string]: any}, theme, animatio
         title.Text = options.Title
         title.TextColor3 = theme.Text
         title.TextSize = 15
+        title.TextTruncate = Enum.TextTruncate.AtEnd
         title.TextXAlignment = Enum.TextXAlignment.Left
         title.Parent = frame
     end

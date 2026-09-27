@@ -54,12 +54,33 @@ end
 
 function Nebula:CreateWindow(options: {[string]: any}?)
     assert(not self._destroyed, "Cannot create a window after Nebula:Destroy()")
-    local window = Window.new(self._root, options or {}, self:GetTheme(), self.Animations, self.Maid)
+    local window = Window.new(self._root, options or {}, self:GetTheme(), self.Animations, self.Maid, function()
+        self:_cycleRenderMode()
+    end)
     table.insert(self._windows, window)
     self:_addSettingsTab(window, options or {})
+    window:SetRenderModeLabel(self.Root.Mode)
     self._componentCount += 1
     self:_applyResponsive()
     return window
+end
+
+function Nebula:_cycleRenderMode()
+    local order = { "2D", "3D", "Hybrid" }
+    local currentIndex = 1
+    for index, mode in ipairs(order) do
+        if mode == self.Root.Mode then
+            currentIndex = index
+            break
+        end
+    end
+    local nextMode = order[(currentIndex % #order) + 1]
+    local adornee = self.Root.Options.Adornee
+    if nextMode ~= "2D" and not (adornee and adornee:IsA("BasePart")) then
+        self:Toast("3D and Hybrid modes need options.Adornee = a BasePart", "warning")
+        return
+    end
+    self:SetRenderMode(nextMode)
 end
 
 function Nebula:_addSettingsTab(window, options)
@@ -135,6 +156,7 @@ function Nebula:SetRenderMode(mode: string, options: {[string]: any}?)
         self.Commands = Command.new(self._root, commands, self:GetTheme(), self.Animations, self.Maid)
         for _, window in ipairs(self._windows) do
             for buttonMode, button in pairs(window._displayModeButtons or {}) do button:SetSelected(buttonMode == mode) end
+            window:SetRenderModeLabel(mode)
         end
         self:_applyResponsive()
         self._renderModeTransitioning = false

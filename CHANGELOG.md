@@ -1,3 +1,9 @@
+## 0.2.0
+
+- Added working 2D, 3D, and Hybrid display mode buttons in every window.
+- Added animated 3D mode exit motion and gentle panel border glow.
+- Tightened compact mobile sizing and refreshed the render-mode example.
+
 # Changelog
 
 All notable changes to Nebula LIB will be documented here.

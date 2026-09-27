@@ -4,6 +4,8 @@
 
 Creates an app runtime.
 
+`Nebula.VERSION` exposes the current public library version.
+
 | Option | Type | Default |
 | --- | --- | --- |
 | `Parent` | `Instance` | local player's PlayerGui |
@@ -27,6 +29,10 @@ Creates an app runtime.
 - `GetDiagnostics()` → diagnostics table
 - `Toast(message, kind?, duration?)` → toast instance
 - `Destroy()` → `nil`
+- `SetVisible(enabled)` → `nil`
+- `Open()` → `nil`
+- `Close()` → `nil` (3D roots orbit, rise, and fade before hiding)
+- `Toggle()` → `nil`
 
 ## Animations
 

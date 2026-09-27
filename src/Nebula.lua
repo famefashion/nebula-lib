@@ -279,34 +279,53 @@ local Button = {}
 Button.__index = Button
 
 function Button.new(parent: Instance, options: {[string]: any}, theme, animations)
+    local primary = options.Kind == "Primary"
     local button = Instance.new("TextButton")
     button.Name = options.Label or "Button"
     button.AutoButtonColor = false
-    button.BackgroundColor3 = theme.SurfaceSecondary
+    button.Active = true
+    button.Selectable = true
+    button.BackgroundColor3 = primary and theme.Accent or theme.SurfaceSecondary
+    button.BackgroundTransparency = primary and 0.02 or 0
     button.BorderSizePixel = 0
-    button.Size = UDim2.new(1, 0, 0, theme.ControlHeight)
+    button.Size = UDim2.new(1, 0, 0, options.Height or theme.ControlHeight)
     button.Font = Enum.Font.GothamMedium
     button.Text = options.Label or "Button"
-    button.TextColor3 = theme.Text
+    button.TextColor3 = primary and theme.Background or theme.Text
     button.TextSize = 13
+    button.TextWrapped = true
     button.Parent = parent
-    local scale = Instance.new("UIScale")
-    scale.Scale = 0.96
-    scale.Parent = button
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, theme.CornerRadius - 3)
+    corner.CornerRadius = UDim.new(0, math.max(9, theme.CornerRadius - 3))
     corner.Parent = button
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = primary and theme.AccentSecondary or theme.Border
+    stroke.Transparency = primary and 0.4 or 0.28
+    stroke.Parent = button
+    local scale = Instance.new("UIScale")
+    scale.Scale = 0.98
+    scale.Parent = button
     local self = Component.new(button, theme, animations)
     setmetatable(self, Button)
     animations:Scale(button, 1, "spring")
 
     self.Maid:Give(button.MouseEnter:Connect(function()
-        animations:Play(button, { BackgroundColor3 = theme.Border }, "quick")
-        animations:Scale(button, 1.025, "quick")
+        animations:Play(button, { BackgroundColor3 = primary and theme.AccentSecondary or theme.SurfaceSecondary }, "quick")
+        animations:Scale(button, 1.015, "quick")
     end))
     self.Maid:Give(button.MouseLeave:Connect(function()
-        animations:Play(button, { BackgroundColor3 = theme.SurfaceSecondary }, "quick")
+        animations:Play(button, { BackgroundColor3 = primary and theme.Accent or theme.SurfaceSecondary }, "quick")
         animations:Scale(button, 1, "quick")
+    end))
+    self.Maid:Give(button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            animations:Scale(button, 0.985, "quick")
+        end
+    end))
+    self.Maid:Give(button.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            animations:Scale(button, 1, "quick")
+        end
     end))
     self.Maid:Give(button.Activated:Connect(function()
         if options.OnClick then
@@ -454,25 +473,28 @@ function Toggle.new(parent: Instance, options: {[string]: any}, theme, animation
     local row = Instance.new("TextButton")
     row.Name = options.Label or "Toggle"
     row.AutoButtonColor = false
+    row.Active = true
+    row.Selectable = true
     row.BackgroundTransparency = 1
-    row.Size = UDim2.new(1, 0, 0, theme.ControlHeight)
+    row.Size = UDim2.new(1, 0, 0, options.Height or theme.ControlHeight)
     row.Text = ""
     row.Parent = parent
 
     local label = Instance.new("TextLabel")
     label.BackgroundTransparency = 1
-    label.Size = UDim2.new(1, -58, 1, 0)
+    label.Size = UDim2.new(1, -70, 1, 0)
     label.Font = Enum.Font.Gotham
     label.Text = options.Label or "Toggle"
     label.TextColor3 = theme.TextSecondary
     label.TextSize = 13
+    label.TextWrapped = true
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = row
 
     local track = Instance.new("Frame")
     track.AnchorPoint = Vector2.new(1, 0.5)
     track.Position = UDim2.new(1, 0, 0.5, 0)
-    track.Size = UDim2.fromOffset(42, 22)
+    track.Size = UDim2.fromOffset(46, 24)
     track.BackgroundColor3 = theme.Border
     track.BorderSizePixel = 0
     track.Parent = row
@@ -480,7 +502,7 @@ function Toggle.new(parent: Instance, options: {[string]: any}, theme, animation
     trackCorner.CornerRadius = UDim.new(1, 0)
     trackCorner.Parent = track
     local knob = Instance.new("Frame")
-    knob.Size = UDim2.fromOffset(16, 16)
+    knob.Size = UDim2.fromOffset(18, 18)
     knob.Position = UDim2.fromOffset(3, 3)
     knob.BackgroundColor3 = theme.Text
     knob.BorderSizePixel = 0
@@ -495,7 +517,7 @@ function Toggle.new(parent: Instance, options: {[string]: any}, theme, animation
 
     local function render(value: boolean)
         animations:Play(track, { BackgroundColor3 = value and theme.Accent or theme.Border }, "quick")
-        animations:Play(knob, { Position = value and UDim2.fromOffset(23, 3) or UDim2.fromOffset(3, 3) }, "quick")
+        animations:Play(knob, { Position = value and UDim2.fromOffset(25, 3) or UDim2.fromOffset(3, 3) }, "quick")
     end
     render(self.Value:Get())
     self.Maid:Give(self.Value:Subscribe(function(value)
@@ -537,13 +559,16 @@ Surface.__index = Surface
 setmetatable(Surface, Component)
 
 function Surface.new(parent: Instance, options: {[string]: any}, theme, animations)
+    local hasExplicitSize = options.Size ~= nil
     local frame = Instance.new("Frame")
     frame.Name = options.Title or "Surface"
     frame.BackgroundColor3 = theme.Surface
     frame.BackgroundTransparency = theme.Transparency
     frame.BorderSizePixel = 0
-    frame.Size = options.Size or UDim2.new(1, 0, 0, 160)
+    frame.Size = options.Size or UDim2.new(1, 0, 0, 0)
+    frame.AutomaticSize = hasExplicitSize and Enum.AutomaticSize.None or Enum.AutomaticSize.Y
     frame.LayoutOrder = options.LayoutOrder or 0
+    frame.ClipsDescendants = true
     frame.Parent = parent
 
     local corner = Instance.new("UICorner")
@@ -552,7 +577,8 @@ function Surface.new(parent: Instance, options: {[string]: any}, theme, animatio
 
     local stroke = Instance.new("UIStroke")
     stroke.Color = theme.Border
-    stroke.Transparency = 0.2
+    stroke.Transparency = 0.42
+    stroke.Thickness = 1
     stroke.Parent = frame
 
     local self = Component.new(frame, theme, animations)
@@ -561,7 +587,8 @@ function Surface.new(parent: Instance, options: {[string]: any}, theme, animatio
     self.Content.Name = "Content"
     self.Content.BackgroundTransparency = 1
     self.Content.Position = UDim2.fromOffset(16, options.Title and 46 or 16)
-    self.Content.Size = UDim2.new(1, -32, 1, options.Title and -62 or -32)
+    self.Content.Size = UDim2.new(1, -32, 0, hasExplicitSize and (options.Title and -62 or -32) or 0)
+    self.Content.AutomaticSize = hasExplicitSize and Enum.AutomaticSize.None or Enum.AutomaticSize.Y
     self.Content.Parent = frame
     Layout.Column(self.Content, { Spacing = 8 })
 
@@ -575,6 +602,7 @@ function Surface.new(parent: Instance, options: {[string]: any}, theme, animatio
         title.Text = options.Title
         title.TextColor3 = theme.Text
         title.TextSize = 15
+        title.TextTruncate = Enum.TextTruncate.AtEnd
         title.TextXAlignment = Enum.TextXAlignment.Left
         title.Parent = frame
     end
@@ -623,6 +651,7 @@ function Tab:AddText(text: string, options: {[string]: any}?)
     local label = Instance.new("TextLabel")
     label.BackgroundTransparency = 1
     label.Size = UDim2.new(1, 0, 0, options and options.Height or 24)
+    label.AutomaticSize = options and options.Height and Enum.AutomaticSize.None or Enum.AutomaticSize.Y
     label.Font = options and options.Font or Enum.Font.Gotham
     label.Text = text
     label.TextColor3 = options and options.Color or self._window.Theme.TextSecondary
@@ -714,133 +743,201 @@ local UserInputService = game:GetService("UserInputService")
 local Component = require("Components.Component")
 local Surface = require("Components.Surface")
 local Layout = require("Layout.Layout")
+local Maid = require("Core.Maid")
 
 local Window = {}
 Window.__index = Window
+
+local function corner(instance: Instance, radius: number)
+    local value = Instance.new("UICorner")
+    value.CornerRadius = UDim.new(0, radius)
+    value.Parent = instance
+    return value
+end
+
+local function createTabButton(parent: Instance, name: string, icon: string?, theme, compact: boolean)
+    local button = Instance.new("TextButton")
+    button.Name = name
+    button.AutoButtonColor = false
+    button.Active = true
+    button.Selectable = true
+    button.BackgroundColor3 = theme.SurfaceSecondary
+    button.BackgroundTransparency = 0.38
+    button.BorderSizePixel = 0
+    button.Size = compact and UDim2.fromOffset(118, 38) or UDim2.new(1, 0, 0, 40)
+    button.Font = Enum.Font.GothamMedium
+    button.Text = (icon and icon .. "  " or "") .. name
+    button.TextColor3 = theme.TextSecondary
+    button.TextSize = compact and 12 or 13
+    button.TextTruncate = Enum.TextTruncate.AtEnd
+    button.TextXAlignment = Enum.TextXAlignment.Left
+    button.Parent = parent
+    corner(button, compact and 11 or 10)
+    local padding = Instance.new("UIPadding")
+    padding.PaddingLeft = UDim.new(0, compact and 13 or 14)
+    padding.PaddingRight = UDim.new(0, 10)
+    padding.Parent = button
+    return button
+end
 
 function Window.new(root: Instance, options: {[string]: any}, theme, animations, maid)
     local frame = Instance.new("Frame")
     frame.Name = "NebulaWindow"
     frame.AnchorPoint = Vector2.new(0.5, 0.5)
-    local targetPosition = UDim2.fromScale(0.5, 0.5)
-    frame.Position = UDim2.new(0.5, 0, 0.5, 12)
+    frame.Position = UDim2.fromScale(0.5, 0.5)
     frame.Size = UDim2.fromOffset(820, 520)
     frame.BackgroundColor3 = theme.BackgroundSecondary
-    frame.BackgroundTransparency = 1
+    frame.BackgroundTransparency = 0.03
     frame.BorderSizePixel = 0
+    frame.ClipsDescendants = true
     frame.Parent = root
-    animations:Play(frame, {
-        Position = targetPosition,
-        BackgroundTransparency = 0.04,
-    }, "reveal")
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, theme.CornerRadius + 4)
-    corner.Parent = frame
+    corner(frame, theme.CornerRadius + 5)
     local stroke = Instance.new("UIStroke")
     stroke.Color = theme.Border
-    stroke.Transparency = 0.12
+    stroke.Transparency = 0.08
+    stroke.Thickness = 1
     stroke.Parent = frame
 
+    local accent = Instance.new("Frame")
+    accent.Name = "AccentLine"
+    accent.BackgroundColor3 = theme.Accent
+    accent.BorderSizePixel = 0
+    accent.Position = UDim2.fromOffset(18, 8)
+    accent.Size = UDim2.new(0, 44, 0, 3)
+    accent.Parent = frame
+    corner(accent, 2)
+
     local header = Instance.new("Frame")
+    header.Name = "Header"
+    header.Active = true
     header.BackgroundTransparency = 1
-    header.Position = UDim2.fromOffset(20, 16)
-    header.Size = UDim2.new(1, -40, 0, 42)
+    header.Position = UDim2.fromOffset(18, 16)
+    header.Size = UDim2.new(1, -36, 0, 40)
     header.Parent = frame
+
     local title = Instance.new("TextLabel")
     title.BackgroundTransparency = 1
-    title.Size = UDim2.new(1, 0, 0, 22)
+    title.Size = UDim2.new(1, -86, 0, 22)
     title.Font = Enum.Font.GothamBold
     title.Text = options.Title or "Nebula"
     title.TextColor3 = theme.Text
     title.TextSize = 18
+    title.TextTruncate = Enum.TextTruncate.AtEnd
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Parent = header
+
     local subtitle = Instance.new("TextLabel")
     subtitle.BackgroundTransparency = 1
     subtitle.Position = UDim2.fromOffset(0, 23)
-    subtitle.Size = UDim2.new(1, 0, 0, 16)
+    subtitle.Size = UDim2.new(1, -86, 0, 16)
     subtitle.Font = Enum.Font.Gotham
     subtitle.Text = options.Subtitle or "Interface runtime"
     subtitle.TextColor3 = theme.TextMuted
     subtitle.TextSize = 11
+    subtitle.TextTruncate = Enum.TextTruncate.AtEnd
     subtitle.TextXAlignment = Enum.TextXAlignment.Left
     subtitle.Parent = header
+
+    local status = Instance.new("TextLabel")
+    status.BackgroundTransparency = 1
+    status.AnchorPoint = Vector2.new(1, 0)
+    status.Position = UDim2.new(1, 0, 0, 4)
+    status.Size = UDim2.fromOffset(74, 18)
+    status.Font = Enum.Font.GothamMedium
+    status.Text = "●  READY"
+    status.TextColor3 = theme.AccentSecondary
+    status.TextSize = 10
+    status.TextXAlignment = Enum.TextXAlignment.Right
+    status.Parent = header
+
+    local divider = Instance.new("Frame")
+    divider.Name = "Divider"
+    divider.BackgroundColor3 = theme.Border
+    divider.BackgroundTransparency = 0.35
+    divider.BorderSizePixel = 0
+    divider.Position = UDim2.fromOffset(18, 64)
+    divider.Size = UDim2.new(1, -36, 0, 1)
+    divider.Parent = frame
 
     local nav = Instance.new("Frame")
     nav.Name = "Navigation"
     nav.BackgroundTransparency = 1
-    nav.Position = UDim2.fromOffset(20, 78)
-    nav.Size = UDim2.new(0, 164, 1, -98)
+    nav.Position = UDim2.fromOffset(18, 82)
+    nav.Size = UDim2.new(0, 168, 1, -102)
     nav.Parent = frame
-    Layout.Column(nav, { Spacing = 6 })
+    Layout.Column(nav, { Spacing = 7 })
+
+    local mobileNav = Instance.new("ScrollingFrame")
+    mobileNav.Name = "MobileNavigation"
+    mobileNav.BackgroundTransparency = 1
+    mobileNav.BorderSizePixel = 0
+    mobileNav.Position = UDim2.fromOffset(18, 74)
+    mobileNav.Size = UDim2.new(1, -36, 0, 38)
+    mobileNav.CanvasSize = UDim2.new()
+    mobileNav.AutomaticCanvasSize = Enum.AutomaticSize.X
+    mobileNav.ScrollingDirection = Enum.ScrollingDirection.X
+    mobileNav.ScrollBarThickness = 0
+    mobileNav.Visible = false
+    mobileNav.Parent = frame
+    Layout.Row(mobileNav, { Spacing = 7 })
+
     local content = Instance.new("ScrollingFrame")
     content.Name = "Content"
-    content.Position = UDim2.fromOffset(204, 78)
-    content.Size = UDim2.new(1, -224, 1, -98)
+    content.Position = UDim2.fromOffset(208, 82)
+    content.Size = UDim2.new(1, -226, 1, -102)
     content.BackgroundTransparency = 1
     content.BorderSizePixel = 0
     content.ScrollBarThickness = 3
     content.ScrollBarImageColor3 = theme.Accent
     content.AutomaticCanvasSize = Enum.AutomaticSize.Y
     content.CanvasSize = UDim2.new()
+    content.ClipsDescendants = true
     content.Parent = frame
 
     local self = Component.new(frame, theme, animations)
     setmetatable(self, Window)
     self._navigation = nav
+    self._mobileNavigation = mobileNav
     self._content = content
+    self._header = header
+    self._divider = divider
     self._tabs = {}
     self._active = nil
+    self._compact = false
     maid:Give(self)
 
     local dragging = false
     local dragStart: Vector2
     local startPosition: UDim2
     self.Maid:Give(header.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPosition = frame.Position
         end
     end))
     self.Maid:Give(UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
             frame.Position = UDim2.new(startPosition.X.Scale, startPosition.X.Offset + delta.X, startPosition.Y.Scale, startPosition.Y.Offset + delta.Y)
         end
     end))
     self.Maid:Give(UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
         end
     end))
+    self:SetResponsive(false)
     return self
 end
 
 function Window:AddTab(name: string, icon: string?)
-    local tabButton = Instance.new("TextButton")
-    tabButton.Name = name
-    tabButton.AutoButtonColor = false
-    tabButton.BackgroundColor3 = self.Theme.SurfaceSecondary
-    tabButton.BackgroundTransparency = 0.4
-    tabButton.Size = UDim2.new(1, 0, 0, 34)
-    tabButton.Font = Enum.Font.GothamMedium
-    tabButton.Text = (icon and icon .. "  " or "") .. name
-    tabButton.TextColor3 = self.Theme.TextSecondary
-    tabButton.TextSize = 12
-    tabButton.TextXAlignment = Enum.TextXAlignment.Left
-    tabButton.Parent = self._navigation
-    local padding = Instance.new("UIPadding")
-    padding.PaddingLeft = UDim.new(0, 12)
-    padding.Parent = tabButton
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = tabButton
-
+    local tabButton = createTabButton(self._navigation, name, icon, self.Theme, false)
+    local mobileButton = createTabButton(self._mobileNavigation, name, icon, self.Theme, true)
     local page = Instance.new("Frame")
     page.Name = name .. "Page"
     page.BackgroundTransparency = 1
-    page.Size = UDim2.new(1, -16, 0, 0)
+    page.Size = UDim2.new(1, -8, 0, 0)
     page.AutomaticSize = Enum.AutomaticSize.Y
     page.Visible = false
     page.Parent = self._content
@@ -849,16 +946,57 @@ function Window:AddTab(name: string, icon: string?)
         Name = name,
         Page = page,
         Button = tabButton,
+        MobileButton = mobileButton,
         _window = self,
-        Maid = require("Core.Maid").new(),
+        Maid = Maid.new(),
     }, { __index = require("Components.Tab") })
     table.insert(self._tabs, tab)
     self.Maid:Give(tab)
     self.Maid:Give(tabButton.Activated:Connect(function()
         self:SelectTab(tab)
     end))
+    self.Maid:Give(mobileButton.Activated:Connect(function()
+        self:SelectTab(tab)
+    end))
     if not self._active then
         self:SelectTab(tab)
+    end
+    return tab
+end
+
+function Window:AddSettingsTab(app, options: {[string]: any}?)
+    options = options or {}
+    local tab = self:AddTab(options.Name or "UI Settings", options.Icon or "⚙")
+    tab:AddText(options.Description or "Tune the interface for your device and choose where Nebula renders.", {
+        Height = 38,
+        TextSize = 13,
+        Color = self.Theme.TextSecondary,
+    })
+    local surface = tab:AddSurface({ Title = "Display mode" })
+    local modes = {
+        { Name = "2D", Detail = "Screen overlay", Icon = "▣" },
+        { Name = "3D", Detail = "SurfaceGui on a part", Icon = "◇" },
+        { Name = "Hybrid", Detail = "Surface + screen overlay", Icon = "◈" },
+    }
+    for _, mode in ipairs(modes) do
+        surface:AddButton({
+            Label = string.format("%s  %s  ·  %s", mode.Icon, mode.Name, mode.Detail),
+            Kind = mode.Name == "2D" and "Primary" or "Default",
+            OnClick = function()
+                if not app:CanUseRenderMode(mode.Name) then
+                    app:Toast(mode.Name .. " mode needs a BasePart Adornee", "warning", 3)
+                    return
+                end
+                local ok, err = pcall(function()
+                    app:SetRenderMode(mode.Name)
+                end)
+                if ok then
+                    app:Toast(mode.Name .. " display mode active", "success", 2.5)
+                else
+                    app:Toast(tostring(err), "error", 4)
+                end
+            end,
+        })
     end
     return tab
 end
@@ -868,15 +1006,48 @@ function Window:SelectTab(tab)
     for _, item in ipairs(self._tabs) do
         local active = item == tab
         item.Page.Visible = active
-        item.Button.BackgroundTransparency = active and 0 or 0.4
-        item.Button.BackgroundColor3 = active and self.Theme.Accent or self.Theme.SurfaceSecondary
-        item.Button.TextColor3 = active and self.Theme.Background or self.Theme.TextSecondary
+        for _, button in ipairs({ item.Button, item.MobileButton }) do
+            button.BackgroundTransparency = active and 0 or 0.38
+            button.BackgroundColor3 = active and self.Theme.Accent or self.Theme.SurfaceSecondary
+            button.TextColor3 = active and self.Theme.Background or self.Theme.TextSecondary
+        end
         if active then
             local scale = item.Page:FindFirstChildOfClass("UIScale") or Instance.new("UIScale")
-            scale.Scale = 0.97
+            scale.Scale = 0.985
             scale.Parent = item.Page
             self.Animations:Scale(item.Page, 1, "reveal")
         end
+    end
+end
+
+function Window:SetResponsive(compact: boolean)
+    self._compact = compact
+    if compact then
+        self.Instance.Size = UDim2.new(1, -20, 1, -28)
+        self._header.Position = UDim2.fromOffset(16, 12)
+        self._header.Size = UDim2.new(1, -32, 0, 40)
+        self._divider.Position = UDim2.fromOffset(16, 64)
+        self._divider.Size = UDim2.new(1, -32, 0, 1)
+        self._navigation.Visible = false
+        self._mobileNavigation.Visible = true
+        self._mobileNavigation.Position = UDim2.fromOffset(16, 74)
+        self._mobileNavigation.Size = UDim2.new(1, -32, 0, 38)
+        self._content.Position = UDim2.fromOffset(16, 124)
+        self._content.Size = UDim2.new(1, -32, 1, -140)
+        self._content.ScrollBarThickness = 0
+    else
+        self.Instance.Size = UDim2.fromOffset(820, 520)
+        self._header.Position = UDim2.fromOffset(18, 16)
+        self._header.Size = UDim2.new(1, -36, 0, 40)
+        self._divider.Position = UDim2.fromOffset(18, 64)
+        self._divider.Size = UDim2.new(1, -36, 0, 1)
+        self._navigation.Visible = true
+        self._mobileNavigation.Visible = false
+        self._navigation.Position = UDim2.fromOffset(18, 82)
+        self._navigation.Size = UDim2.new(0, 168, 1, -102)
+        self._content.Position = UDim2.fromOffset(208, 82)
+        self._content.Size = UDim2.new(1, -226, 1, -102)
+        self._content.ScrollBarThickness = 3
     end
 end
 
@@ -1068,7 +1239,6 @@ end
 __factories["NebulaCore"] = function(require)
 
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 
 local Maid = require("Core.Maid")
 local Manager = require("Theme.Manager")
@@ -1090,6 +1260,7 @@ function Nebula.new(options: {[string]: any}?)
         Debug = options.Debug == true,
         _componentCount = 0,
         _destroyed = false,
+        _windows = {},
     }, Nebula)
     self.ThemeManager = Manager.new(options.Theme)
     self.Animations = Animator.new(options.ReducedMotion)
@@ -1113,7 +1284,7 @@ function Nebula.new(options: {[string]: any}?)
         self:_applyResponsive()
     end))
     self._breakpoint = Responsive.GetBreakpoint(workspace.CurrentCamera.ViewportSize.X)
-    self._applyResponsive()
+    self:_applyResponsive()
     return self
 end
 
@@ -1121,6 +1292,8 @@ function Nebula:CreateWindow(options: {[string]: any}?)
     assert(not self._destroyed, "Cannot create a window after Nebula:Destroy()")
     local window = Window.new(self._root, options or {}, self:GetTheme(), self.Animations, self.Maid)
     self._componentCount += 1
+    table.insert(self._windows, window)
+    window:SetResponsive(self._breakpoint == "Compact")
     return window
 end
 
@@ -1144,9 +1317,28 @@ function Nebula:ResetTheme()
     self.ThemeManager:Reset()
 end
 
+function Nebula:CanUseRenderMode(mode: string): boolean
+    if mode == "2D" then
+        return true
+    end
+    local adornee = self.Root.Options.Adornee
+    return typeof(adornee) == "Instance" and adornee:IsA("BasePart")
+end
+
+function Nebula:GetRenderModes(): {{Name: string, Available: boolean, Reason: string?}}
+    local hasAdornee = self:CanUseRenderMode("3D")
+    return {
+        { Name = "2D", Available = true },
+        { Name = "3D", Available = hasAdornee, Reason = hasAdornee and nil or "Requires a BasePart Adornee" },
+        { Name = "Hybrid", Available = hasAdornee, Reason = hasAdornee and nil or "Requires a BasePart Adornee" },
+    }
+end
+
 function Nebula:SetRenderMode(mode: string, options: {[string]: any}?)
+    assert(self:CanUseRenderMode(mode), ("Nebula render mode %s requires a BasePart Adornee"):format(tostring(mode)))
     self.Root:SetMode(mode, options)
     self._root = self.Root.Instance
+    self:_applyResponsive()
 end
 
 function Nebula:SetDebug(enabled: boolean)
@@ -1174,23 +1366,17 @@ end
 
 function Nebula:_applyTheme(theme)
     self.Toasts.Theme = theme
+    for _, window in ipairs(self._windows) do
+        window.Theme = theme
+    end
 end
 
 function Nebula:_applyResponsive()
     if not self._root then return end
     local compact = self._breakpoint == "Compact"
-    for _, child in ipairs(self._root:GetChildren()) do
-        if child.Name == "NebulaWindow" then
-            child.Size = compact and UDim2.new(1, -24, 1, -48) or UDim2.fromOffset(820, 520)
-            local navigation = child:FindFirstChild("Navigation")
-            local content = child:FindFirstChild("Content")
-            if navigation and navigation:IsA("GuiObject") then
-                navigation.Visible = not compact
-            end
-            if content and content:IsA("GuiObject") then
-                content.Position = compact and UDim2.fromOffset(16, 78) or UDim2.fromOffset(204, 78)
-                content.Size = compact and UDim2.new(1, -32, 1, -98) or UDim2.new(1, -224, 1, -98)
-            end
+    for _, window in ipairs(self._windows) do
+        if window and window.Instance and window.Instance.Parent then
+            window:SetResponsive(compact)
         end
     end
 end
@@ -1200,6 +1386,7 @@ function Nebula:Destroy()
         return
     end
     self._destroyed = true
+    table.clear(self._windows)
     self.Maid:Destroy()
 end
 
@@ -1219,6 +1406,7 @@ function Root.new(mode: string?, options: {[string]: any}, maid)
         Mode = mode or "2D",
         Options = options or {},
         Instance = nil,
+        _overlay = nil,
         _maid = maid,
     }, Root)
     self:_create()
@@ -1226,8 +1414,13 @@ function Root.new(mode: string?, options: {[string]: any}, maid)
 end
 
 function Root:_create()
-    if self.Instance and self.Instance.Parent then
-        self.Instance:Destroy()
+    local previous = self.Instance
+    local previousOverlay = self._overlay
+    local children = {}
+    if previous and previous.Parent then
+        for _, child in ipairs(previous:GetChildren()) do
+            table.insert(children, child)
+        end
     end
     local playerGui = self.Options.Parent
     local mode = self.Mode
@@ -1239,6 +1432,7 @@ function Root:_create()
         container.ResetOnSpawn = false
         container.IgnoreGuiInset = true
         container.DisplayOrder = self.Options.DisplayOrder or 20
+        container.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         container.Parent = playerGui
     else
         local adornee = self.Options.Adornee
@@ -1248,15 +1442,31 @@ function Root:_create()
         container.Face = self.Options.Face or Enum.NormalId.Front
         container.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
         container.PixelsPerStud = self.Options.PixelsPerStud or 50
+        container.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         container.Parent = adornee
         if mode == "Hybrid" then
             local overlay = Instance.new("ScreenGui")
             overlay.ResetOnSpawn = false
             overlay.IgnoreGuiInset = true
             overlay.DisplayOrder = self.Options.DisplayOrder or 20
+            overlay.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
             overlay.Parent = playerGui
+            self._overlay = overlay
             self._maid:Give(overlay)
+        else
+            self._overlay = nil
         end
+    end
+    for _, child in ipairs(children) do
+        if child.Parent == previous then
+            child.Parent = container
+        end
+    end
+    if previous and previous.Parent then
+        previous:Destroy()
+    end
+    if previousOverlay and previousOverlay.Parent then
+        previousOverlay:Destroy()
     end
     self.Instance = container
     self._maid:Give(container)

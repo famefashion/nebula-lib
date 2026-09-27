@@ -12,6 +12,7 @@ local Responsive = require(script.Utilities.Responsive)
 
 local Nebula = {}
 Nebula.__index = Nebula
+Nebula.VERSION = "0.1.0"
 
 function Nebula.new(options: {[string]: any}?)
     options = options or {}

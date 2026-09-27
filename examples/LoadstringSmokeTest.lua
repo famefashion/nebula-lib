@@ -2,7 +2,7 @@
 -- Paste into the controlled runtime that provides game:HttpGet, loadstring,
 -- and (for automatic clipboard copy) setclipboard or toclipboard.
 
-local SOURCE_URL = "https://raw.githubusercontent.com/famefashion/nebula-lib/main/src/Nebula.lua"
+local SOURCE_URL = "https://raw.githubusercontent.com/famefashion/nebula-lib/main/dist/Nebula.lua"
 local app
 
 local function formatError(err)
@@ -77,11 +77,11 @@ local function runSmokeTest()
 
     local window = app:CreateWindow({
         Title = "Nebula Runtime Check",
-        Subtitle = "Loadstring · API · controls · motion",
+        Subtitle = "Loadstring Â· API Â· controls Â· motion",
     })
     assert(window:IsAlive(), "Window failed its lifecycle check")
 
-    local dashboard = window:AddTab("Dashboard", "◈")
+    local dashboard = window:AddTab("Dashboard", "â")
     dashboard:AddText("Use the controls below to exercise the live UI.")
     local firstSurface = dashboard:AddSurface({
         Title = "Signal controls",
@@ -125,7 +125,7 @@ local function runSmokeTest()
     assert(slider:Get() == 72 and sliderChanged == 72, "Slider Get/Set/OnChanged failed")
     sliderConnection:Disconnect()
 
-    local diagnosticsTab = window:AddTab("Diagnostics", "⌁")
+    local diagnosticsTab = window:AddTab("Diagnostics", "â")
     diagnosticsTab:AddText("Diagnostics and theme methods are active.")
     local secondSurface = diagnosticsTab:AddSurface({
         Title = "Event horizon",

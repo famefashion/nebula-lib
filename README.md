@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/logo/nebula-banner.svg" alt="Nebula LIB — a responsive Roblox Luau UI framework" width="100%" />
+<img src="assets/logo/nebula-banner.svg" alt="Nebula LIB â a responsive Roblox Luau UI framework" width="100%" />
 
 <br />
 
@@ -15,9 +15,9 @@
 <br />
 
 <a href="#-feature-deck">Explore the feature deck</a>
-&nbsp;&nbsp;·&nbsp;&nbsp;
+&nbsp;&nbsp;Â·&nbsp;&nbsp;
 <a href="#-quick-start">Launch in minutes</a>
-&nbsp;&nbsp;·&nbsp;&nbsp;
+&nbsp;&nbsp;Â·&nbsp;&nbsp;
 <a href="#-documentation">Read the docs</a>
 
 </div>
@@ -34,12 +34,12 @@
 
 ---
 
-## ◌ Feature deck
+## â Feature deck
 
 The sections below are interactive. Open a category to see the complete shipped feature list.
 
 <details open>
-<summary><strong>◈ Runtime foundation</strong> — the app lifecycle and public API</summary>
+<summary><strong>â Runtime foundation</strong> â the app lifecycle and public API</summary>
 
 - [x] `Nebula.new(options)` application instance
 - [x] `CreateWindow(options?)` window factory
@@ -53,7 +53,7 @@ The sections below are interactive. Open a category to see the complete shipped 
 </details>
 
 <details>
-<summary><strong>▣ Rendering</strong> — one component model, three presentation modes</summary>
+<summary><strong>â£ Rendering</strong> â one component model, three presentation modes</summary>
 
 - [x] `2D` `ScreenGui` root
 - [x] `3D` `SurfaceGui` root attached to an `Adornee` `BasePart`
@@ -65,7 +65,7 @@ The sections below are interactive. Open a category to see the complete shipped 
 </details>
 
 <details>
-<summary><strong>▤ Components</strong> — composable application primitives</summary>
+<summary><strong>â¤ Components</strong> â composable application primitives</summary>
 
 - [x] `Window` with title bar, navigation, content region, and responsive sizing
 - [x] `Tab` navigation with selection state
@@ -80,7 +80,7 @@ The sections below are interactive. Open a category to see the complete shipped 
 </details>
 
 <details>
-<summary><strong>⌗ Layout</strong> — predictable Roblox-native composition</summary>
+<summary><strong>â Layout</strong> â predictable Roblox-native composition</summary>
 
 - [x] Row layout helper
 - [x] Column layout helper
@@ -92,7 +92,7 @@ The sections below are interactive. Open a category to see the complete shipped 
 </details>
 
 <details>
-<summary><strong>✦ Themes</strong> — make the system yours</summary>
+<summary><strong>â¦ Themes</strong> â make the system yours</summary>
 
 - [x] Seven built-in presets: Nebula Dark, Nebula Light, Midnight, Graphite, Aurora, Glass, and Minimal
 - [x] `RegisterTheme(name, theme)`
@@ -106,7 +106,7 @@ The sections below are interactive. Open a category to see the complete shipped 
 </details>
 
 <details>
-<summary><strong>↝ Motion</strong> — centralized, interruptible animation</summary>
+<summary><strong>â Motion</strong> â centralized, interruptible animation</summary>
 
 - [x] Shared `Animator` service
 - [x] Fade transitions
@@ -124,7 +124,7 @@ The sections below are interactive. Open a category to see the complete shipped 
 </details>
 
 <details>
-<summary><strong>⌁ Responsive behavior</strong> — desktop room without breaking touch</summary>
+<summary><strong>â Responsive behavior</strong> â desktop room without breaking touch</summary>
 
 - [x] `Compact`, `Regular`, and `Wide` viewport breakpoints
 - [x] Compact navigation collapse
@@ -136,7 +136,7 @@ The sections below are interactive. Open a category to see the complete shipped 
 </details>
 
 <details>
-<summary><strong>◫ Developer experience</strong> — stay in control</summary>
+<summary><strong>â« Developer experience</strong> â stay in control</summary>
 
 - [x] Source modules retained for rebuilding the standalone package
 - [x] No runtime package dependency beyond Roblox services
@@ -149,15 +149,18 @@ The sections below are interactive. Open a category to see the complete shipped 
 
 ---
 
-## ⌁ Quick start
+## â Quick start
 
-`src/Nebula.lua` is the generated, self-contained loadstring entry point. Fetch it
-as one chunk and call the returned API table; it does not depend on a ModuleScript,
-`script`, or the rest of the `src/` tree at runtime. The files beside it are the
-editable source modules used to rebuild the bundle with `node tools/build-bundle.mjs`.
+For a normal Roblox ModuleScript installation, place the `src/` directory in your
+package and require its ModuleScript entry point. `src/Nebula.lua` delegates to
+`src/NebulaCore.lua`, so it preserves the modular source hierarchy and exposes the
+same API as the standalone distribution.
 
 ```lua
-local Nebula = loadstring(game:HttpGet("https://raw.githubusercontent.com/famefashion/nebula-lib/main/src/Nebula.lua"))()
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Nebula = require(
+    ReplicatedStorage:WaitForChild("Nebula"):WaitForChild("src"):WaitForChild("Nebula")
+)
 
 local app = Nebula.new({
     Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"),
@@ -170,7 +173,7 @@ local window = app:CreateWindow({
     Subtitle = "Live systems overview",
 })
 
-local overview = window:AddTab("Overview", "◈")
+local overview = window:AddTab("Overview", "â")
 local telemetry = overview:AddSurface({ Title = "Telemetry" })
 
 telemetry:AddButton({
@@ -192,7 +195,7 @@ telemetry:AddToggle({
 ```
 
 <details>
-<summary><strong>⌘ See the command palette setup</strong></summary>
+<summary><strong>â See the command palette setup</strong></summary>
 
 ```lua
 local app = Nebula.new({
@@ -219,32 +222,61 @@ app.Commands:Open()
 
 ---
 
-<details open>
-<summary><strong>◉ Enter through the event horizon — loadstring packaging</strong></summary>
+## LOADSTRING INSTALLATION
 
-Use this only in a trusted, compatible runtime that intentionally provides both `game:HttpGet` and `loadstring`. The standard Roblox client does not enable this pattern for ordinary LocalScripts.
+`src/` contains the maintainable modular development source. `dist/Nebula.lua`
+is the generated, self-contained loadstring distribution; it includes only the
+modules reachable from the public entry point and does not require the original
+ModuleScript hierarchy at runtime.
+
+Use the loadstring method only in a trusted, compatible runtime that intentionally
+provides both `game:HttpGet` and `loadstring`. The standard Roblox client does not
+enable this pattern for ordinary LocalScripts.
 
 ```lua
-local Nebula = loadstring(game:HttpGet("https://raw.githubusercontent.com/famefashion/nebula-lib/main/src/Nebula.lua"))()
+local Nebula = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/famefashion/nebula-lib/main/dist/Nebula.lua"
+))()
 
-local app = Nebula.new({
-    Theme = "Nebula Dark",
+local App = Nebula.new({
+    Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"),
     RenderMode = "2D",
+    Theme = "Nebula Dark",
 })
 ```
 
-For a full runtime check, paste [`examples/LoadstringSmokeTest.lua`](examples/LoadstringSmokeTest.lua) into your controlled executor. It checks the loader, documented runtime methods, controls, commands, themes, rendering mode, and animations. If a check fails, it prints the traceback and attempts to copy it with `setclipboard` or `toclipboard`.
+For a full runtime check, paste
+[`examples/LoadstringSmokeTest.lua`](examples/LoadstringSmokeTest.lua) into your
+controlled executor. It checks the loader, documented runtime methods, controls,
+commands, themes, rendering mode, and animations. If a check fails, it prints the
+traceback and attempts to copy it with `setclipboard` or `toclipboard`.
+
+For a ready-to-run three-tab window with overview, controls, and diagnostics, see
+[`examples/ThreeTabShowcase.lua`](examples/ThreeTabShowcase.lua).
 
 Remote code executes with the permissions of its host. Review the source and pin a release tag or commit SHA for anything you expect to keep stable; the `main` URL intentionally follows the latest commit.
 
-</details>
+## â Build and validation
 
-## ◉ Orbit map
+Node.js is only needed to rebuild or validate the distribution:
 
-Open a node to jump from the visual model to the matching API. “Orbit” and “event horizon” are labels for actual UI behavior, not separate dependencies.
+```bash
+npm run build
+npm test
+```
+
+The build reads the actual `src/NebulaCore.lua` dependency graph, emits one
+factory per reachable module, and writes `dist/Nebula.lua`. The checks verify that
+the output is deterministic, has no unresolved `require(script...)` calls, does
+not duplicate modules, returns the Nebula API, and keeps the documented public
+methods—including `Nebula.VERSION`.
+
+## â Orbit map
+
+Open a node to jump from the visual model to the matching API. âOrbitâ and âevent horizonâ are labels for actual UI behavior, not separate dependencies.
 
 <details>
-<summary><strong>Core orbit</strong> — runtime, themes, and diagnostics</summary>
+<summary><strong>Core orbit</strong> â runtime, themes, and diagnostics</summary>
 
 - [Runtime and theme methods](docs/api.md#runtime-methods)
 - [Responsive rendering roots](docs/rendering.md)
@@ -253,7 +285,7 @@ Open a node to jump from the visual model to the matching API. “Orbit” and �
 </details>
 
 <details>
-<summary><strong>Control orbit</strong> — windows, tabs, surfaces, and input</summary>
+<summary><strong>Control orbit</strong> â windows, tabs, surfaces, and input</summary>
 
 - [Window, tab, and control API](docs/components.md)
 - [State and input behavior](docs/state.md)
@@ -262,7 +294,7 @@ Open a node to jump from the visual model to the matching API. “Orbit” and �
 </details>
 
 <details>
-<summary><strong>Motion orbit</strong> — reveal, spring, slide, rotate, and stagger</summary>
+<summary><strong>Motion orbit</strong> â reveal, spring, slide, rotate, and stagger</summary>
 
 - [Animation API and examples](docs/animations.md)
 - [Single-file loadstring smoke test](examples/LoadstringSmokeTest.lua)
@@ -271,7 +303,7 @@ Open a node to jump from the visual model to the matching API. “Orbit” and �
 
 ---
 
-## ◐ Theme the event horizon
+## â Theme the event horizon
 
 Nebula LIB ships monochrome-ready, but every surface reads from shared tokens:
 
@@ -291,7 +323,7 @@ Built-in presets: `Nebula Dark`, `Nebula Light`, `Midnight`, `Graphite`, `Aurora
 
 ---
 
-## ◇ Render anywhere
+## â Render anywhere
 
 The component API stays the same while the root changes:
 
@@ -311,7 +343,7 @@ app:SetRenderMode("Hybrid", {
 
 ---
 
-## ∿ Motion around the black hole
+## â¿ Motion around the black hole
 
 Animations are coordinated through `app.Animations`, not scattered raw `TweenService` calls:
 
@@ -332,21 +364,21 @@ app:SetReducedMotion(true) -- transitions become immediate
 
 ---
 
-## ⌂ Showcase
+## â Showcase
 
 Open [`examples/Showcase.lua`](examples/Showcase.lua) in a `LocalScript` to see:
 
 ```text
-dashboard surfaces  →  controls  →  theme switching
-command palette     →  toasts    →  diagnostics
-compact layout      →  touch input → responsive window sizing
+dashboard surfaces  â  controls  â  theme switching
+command palette     â  toasts    â  diagnostics
+compact layout      â  touch input â responsive window sizing
 ```
 
 For the single-file loader and interactive API smoke test, see [`examples/LoadstringSmokeTest.lua`](examples/LoadstringSmokeTest.lua).
 
 ---
 
-## ◒ Documentation
+## â Documentation
 
 <div align="center">
 
@@ -362,7 +394,7 @@ For the single-file loader and interactive API smoke test, see [`examples/Loadst
 
 ---
 
-## ⌘ Contributing
+## â Contributing
 
 The repository is source-first. Keep runtime modules under `src/`, examples under `examples/`, and add a documentation example for every public API change.
 

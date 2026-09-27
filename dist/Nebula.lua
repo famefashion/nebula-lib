@@ -676,6 +676,28 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     subtitle.TextXAlignment = Enum.TextXAlignment.Left
     subtitle.Parent = header
 
+    local menuButton = Instance.new("TextButton")
+    menuButton.Name = "MobileMenu"
+    menuButton.AnchorPoint = Vector2.new(0, 0.5)
+    menuButton.Position = UDim2.fromOffset(0, 21)
+    menuButton.Size = UDim2.fromOffset(40, 40)
+    menuButton.BackgroundColor3 = theme.SurfaceSecondary
+    menuButton.BorderSizePixel = 0
+    menuButton.AutoButtonColor = false
+    menuButton.Font = Enum.Font.GothamBold
+    menuButton.Text = "☰"
+    menuButton.TextColor3 = theme.Text
+    menuButton.TextSize = 18
+    menuButton.Visible = false
+    menuButton.Parent = header
+    local menuCorner = Instance.new("UICorner")
+    menuCorner.CornerRadius = UDim.new(0, 10)
+    menuCorner.Parent = menuButton
+    local menuStroke = Instance.new("UIStroke")
+    menuStroke.Color = theme.Border
+    menuStroke.Transparency = 0.15
+    menuStroke.Parent = menuButton
+
     local nav = Instance.new("ScrollingFrame")
     nav.Name = "Navigation"
     nav.BackgroundTransparency = 1
@@ -718,9 +740,15 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     self._headerRule = headerRule
     self._title = title
     self._subtitle = subtitle
+    self._menuButton = menuButton
+    self._menuOpen = false
+    self._compact = false
     self._tabs = {}
     self._active = nil
     maid:Give(self)
+    self.Maid:Give(menuButton.Activated:Connect(function()
+        self:SetMenuOpen(not self._menuOpen)
+    end))
 
     local dragging = false
     local dragInput
@@ -787,6 +815,16 @@ function Window:ConstrainToViewport(viewportSize: Vector2?)
     )
 end
 
+function Window:SetMenuOpen(open: boolean)
+    self._menuOpen = open == true
+    if self._menuButton then
+        self._menuButton.Text = self._menuOpen and "×" or "☰"
+    end
+    if self._navigation then
+        self._navigation.Visible = not self._compact or self._menuOpen
+    end
+end
+
 function Window:ApplyResponsive(viewportSize: Vector2, breakpoint: string)
     if not self.Instance or not self.Instance.Parent then
         return
@@ -796,47 +834,74 @@ function Window:ApplyResponsive(viewportSize: Vector2, breakpoint: string)
     local compact = breakpoint == "Compact"
         or viewportSize.X < 760
         or (touchDevice and viewportSize.X < 1100)
-    local width = math.max(math.min(900, viewportSize.X - (compact and 16 or 32)), 1)
-    local height = math.max(math.min(620, viewportSize.Y - (compact and 16 or 48)), 1)
+    self._compact = compact
+    local width
+    local height
+    if compact then
+        width = math.clamp(math.floor(viewportSize.X * 0.88), 300, 760)
+        height = math.clamp(math.floor(viewportSize.Y * 0.84), 280, 640)
+    else
+        width = math.max(math.min(900, viewportSize.X - 32), 1)
+        height = math.max(math.min(620, viewportSize.Y - 48), 1)
+    end
     self.Instance.Size = UDim2.fromOffset(width, height)
+    self.Instance.BackgroundTransparency = compact and 0.015 or 0.04
 
     local layout = self._navigation:FindFirstChildOfClass("UIListLayout")
     if compact then
-        self._header.Position = UDim2.fromOffset(14, 8)
-        self._header.Size = UDim2.new(1, -28, 0, 42)
+        self._header.Position = UDim2.fromOffset(14, 10)
+        self._header.Size = UDim2.new(1, -28, 0, 40)
         self._headerRule.Position = UDim2.fromOffset(0, 58)
+        self._title.Position = UDim2.fromOffset(52, 0)
+        self._title.Size = UDim2.new(1, -52, 0, 24)
         self._title.TextSize = 16
         self._subtitle.Visible = false
-        self._navigation.Position = UDim2.fromOffset(10, 68)
-        self._navigation.Size = UDim2.new(1, -20, 0, Responsive.TouchTarget(true))
-        self._navigation.AutomaticCanvasSize = Enum.AutomaticSize.X
-        self._navigation.ScrollingDirection = Enum.ScrollingDirection.X
+        self._menuButton.Visible = true
+        self._navigation.Position = UDim2.fromOffset(12, 66)
+        self._navigation.Size = UDim2.fromOffset(
+            math.min(220, width - 24),
+            math.min(280, math.max(height - 82, 160))
+        )
+        self._navigation.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        self._navigation.ScrollingDirection = Enum.ScrollingDirection.Y
         self._navigation.ScrollBarThickness = 0
+        self._navigation.BackgroundColor3 = self.Theme.BackgroundSecondary
+        self._navigation.BackgroundTransparency = 0.02
+        self._navigation.ZIndex = 20
+        self:SetMenuOpen(self._menuOpen)
         if layout then
-            layout.FillDirection = Enum.FillDirection.Horizontal
-            layout.VerticalAlignment = Enum.VerticalAlignment.Center
+            layout.FillDirection = Enum.FillDirection.Vertical
+            layout.VerticalAlignment = Enum.VerticalAlignment.Top
             layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-            layout.Padding = UDim.new(0, 8)
+            layout.Padding = UDim.new(0, 6)
         end
-        self._content.Position = UDim2.fromOffset(10, 126)
-        self._content.Size = UDim2.new(1, -20, 1, -138)
+        self._content.Position = UDim2.fromOffset(12, 70)
+        self._content.Size = UDim2.new(1, -24, 1, -82)
         self._content.ScrollBarThickness = 2
         for _, tab in ipairs(self._tabs) do
-            tab.Button.Size = UDim2.fromOffset(144, Responsive.TouchTarget(true))
-            tab.Button.TextXAlignment = Enum.TextXAlignment.Center
+            tab.Button.Size = UDim2.new(1, 0, 0, Responsive.TouchTarget(true))
+            tab.Button.TextXAlignment = Enum.TextXAlignment.Left
             tab.Button.TextSize = 13
+            tab.Button.ZIndex = 21
         end
     else
         self._header.Position = UDim2.fromOffset(20, 16)
         self._header.Size = UDim2.new(1, -40, 0, 42)
         self._headerRule.Position = UDim2.fromOffset(0, 62)
+        self._title.Position = UDim2.fromOffset(0, 0)
+        self._title.Size = UDim2.new(1, 0, 0, 22)
         self._title.TextSize = 18
         self._subtitle.Visible = true
+        self._menuButton.Visible = false
         self._navigation.Position = UDim2.fromOffset(20, 78)
         self._navigation.Size = UDim2.new(0, 164, 1, -98)
         self._navigation.AutomaticCanvasSize = Enum.AutomaticSize.Y
         self._navigation.ScrollingDirection = Enum.ScrollingDirection.Y
         self._navigation.ScrollBarThickness = 0
+        self._navigation.BackgroundColor3 = self.Theme.Background
+        self._navigation.BackgroundTransparency = 0.25
+        self._navigation.ZIndex = 1
+        self:SetMenuOpen(false)
         if layout then
             layout.FillDirection = Enum.FillDirection.Vertical
             layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
@@ -910,6 +975,9 @@ end
 
 function Window:SelectTab(tab)
     self._active = tab
+    if self._compact then
+        self:SetMenuOpen(false)
+    end
     for _, item in ipairs(self._tabs) do
         local active = item == tab
         item.Page.Visible = active

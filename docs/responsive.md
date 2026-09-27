@@ -4,17 +4,18 @@ Nebula uses the active camera's viewport width to select:
 
 | Breakpoint | Width | Behavior |
 | --- | ---: | --- |
-| Compact | `< 640` or touch viewport `< 1100` | Nearly full-screen window, touch-sized horizontal tab chips |
+| Compact | `< 640` or touch viewport `< 1100` | Floating mobile card with a touch-sized tab drawer |
 | Regular | `640–1023` | Standard window sizing with a vertical navigation rail |
 | Wide | `>= 1024` | Larger window with room for navigation and content |
 
 The root listens to camera viewport changes. Touch devices use compact navigation
 through tablet widths instead of forcing a desktop sidebar onto a landscape tablet.
-Compact windows use safe margins, stay below Roblox's top inset, and hide
-the secondary subtitle to preserve vertical space, and move tabs into a horizontally
-scrollable strip so every tab remains reachable on a phone. Tab buttons are at least
-48px high in compact mode; toggles and sliders also expose larger touch targets and
-sliders can be dragged from the full rail instead of only the knob.
+Compact windows become a smaller floating card with a compact header and a
+hamburger-driven tab drawer; the desktop sidebar is not squeezed into the phone
+layout. They use safe margins, stay below Roblox's top inset, and hide the
+secondary subtitle to preserve vertical space. Tab buttons are at least 48px high
+in compact mode; toggles and sliders also expose larger touch targets and sliders
+can be dragged from the full rail instead of only the knob.
 
 This follows the most useful patterns found in public loadstring UI libraries:
 

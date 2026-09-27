@@ -62,12 +62,33 @@ end
 
 function Nebula:CreateWindow(options: {[string]: any}?)
     assert(not self._destroyed, "Cannot create a window after Nebula:Destroy()")
-    local window = Window.new(self._root, options or {}, self:GetTheme(), self.Animations, self.Maid)
+    local window = Window.new(self._root, options or {}, self:GetTheme(), self.Animations, self.Maid, function()
+        self:_cycleRenderMode()
+    end)
     table.insert(self._windows, window)
     self:_addSettingsTab(window, options or {})
+    window:SetRenderModeLabel(self.Root.Mode)
     self._componentCount += 1
     self:_applyResponsive()
     return window
+end
+
+function Nebula:_cycleRenderMode()
+    local order = { "2D", "3D", "Hybrid" }
+    local currentIndex = 1
+    for index, mode in ipairs(order) do
+        if mode == self.Root.Mode then
+            currentIndex = index
+            break
+        end
+    end
+    local nextMode = order[(currentIndex % #order) + 1]
+    local adornee = self.Root.Options.Adornee
+    if nextMode ~= "2D" and not (adornee and adornee:IsA("BasePart")) then
+        self:Toast("3D and Hybrid modes need options.Adornee = a BasePart", "warning")
+        return
+    end
+    self:SetRenderMode(nextMode)
 end
 
 function Nebula:_addSettingsTab(window, options)
@@ -143,6 +164,7 @@ function Nebula:SetRenderMode(mode: string, options: {[string]: any}?)
         self.Commands = Command.new(self._root, commands, self:GetTheme(), self.Animations, self.Maid)
         for _, window in ipairs(self._windows) do
             for buttonMode, button in pairs(window._displayModeButtons or {}) do button:SetSelected(buttonMode == mode) end
+            window:SetRenderModeLabel(mode)
         end
         self:_applyResponsive()
         self._renderModeTransitioning = false
@@ -613,7 +635,7 @@ local Responsive = require("Utilities.Responsive")
 local Window = {}
 Window.__index = Window
 
-function Window.new(root: Instance, options: {[string]: any}, theme, animations, maid)
+function Window.new(root: Instance, options: {[string]: any}, theme, animations, maid, onRenderModeToggle)
     local frame = Instance.new("Frame")
     frame.Name = "NebulaWindow"
     frame.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -657,7 +679,7 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     headerRule.Parent = frame
     local title = Instance.new("TextLabel")
     title.BackgroundTransparency = 1
-    title.Size = UDim2.new(1, 0, 0, 22)
+    title.Size = UDim2.new(1, -110, 0, 22)
     title.Font = Enum.Font.GothamBold
     title.Text = options.Title or "Nebula"
     title.TextColor3 = theme.Text
@@ -667,13 +689,35 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     local subtitle = Instance.new("TextLabel")
     subtitle.BackgroundTransparency = 1
     subtitle.Position = UDim2.fromOffset(0, 23)
-    subtitle.Size = UDim2.new(1, 0, 0, 16)
+    subtitle.Size = UDim2.new(1, -110, 0, 16)
     subtitle.Font = Enum.Font.Gotham
     subtitle.Text = options.Subtitle or "Interface runtime"
     subtitle.TextColor3 = theme.TextMuted
     subtitle.TextSize = 11
     subtitle.TextXAlignment = Enum.TextXAlignment.Left
     subtitle.Parent = header
+
+    local modeButton = Instance.new("TextButton")
+    modeButton.Name = "RenderModeToggle"
+    modeButton.AnchorPoint = Vector2.new(1, 0.5)
+    modeButton.Position = UDim2.new(1, 0, 0.5, 0)
+    modeButton.Size = UDim2.fromOffset(90, 32)
+    modeButton.BackgroundColor3 = theme.SurfaceSecondary
+    modeButton.BorderSizePixel = 0
+    modeButton.AutoButtonColor = false
+    modeButton.Font = Enum.Font.GothamMedium
+    modeButton.Text = "2D  ↕"
+    modeButton.TextColor3 = theme.Text
+    modeButton.TextSize = 12
+    modeButton.ZIndex = 3
+    modeButton.Parent = header
+    local modeCorner = Instance.new("UICorner")
+    modeCorner.CornerRadius = UDim.new(0, 9)
+    modeCorner.Parent = modeButton
+    local modeStroke = Instance.new("UIStroke")
+    modeStroke.Color = theme.Border
+    modeStroke.Transparency = 0.1
+    modeStroke.Parent = modeButton
 
     local menuButton = Instance.new("TextButton")
     menuButton.Name = "MobileMenu"
@@ -740,11 +784,23 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     self._title = title
     self._subtitle = subtitle
     self._menuButton = menuButton
+    self._modeToggleButton = modeButton
     self._menuOpen = false
     self._compact = false
     self._tabs = {}
     self._active = nil
     maid:Give(self)
+    self.Maid:Give(modeButton.MouseEnter:Connect(function()
+        animations:Play(modeButton, { BackgroundColor3 = theme.Surface }, "quick")
+        animations:Play(modeStroke, { Transparency = 0 }, "quick")
+    end))
+    self.Maid:Give(modeButton.MouseLeave:Connect(function()
+        animations:Play(modeButton, { BackgroundColor3 = theme.SurfaceSecondary }, "quick")
+        animations:Play(modeStroke, { Transparency = 0.1 }, "quick")
+    end))
+    self.Maid:Give(modeButton.Activated:Connect(function()
+        if onRenderModeToggle then onRenderModeToggle() end
+    end))
     self.Maid:Give(menuButton.Activated:Connect(function()
         self:SetMenuOpen(not self._menuOpen)
     end))
@@ -789,6 +845,13 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
         end
     end))
     return self
+end
+
+function Window:SetRenderModeLabel(mode: string)
+    if not self._modeToggleButton then
+        return
+    end
+    self._modeToggleButton.Text = mode .. "  ↕"
 end
 
 function Window:ConstrainToViewport(viewportSize: Vector2?)
@@ -852,7 +915,8 @@ function Window:ApplyResponsive(viewportSize: Vector2, breakpoint: string)
         self._header.Size = UDim2.new(1, -28, 0, 40)
         self._headerRule.Position = UDim2.fromOffset(0, 58)
         self._title.Position = UDim2.fromOffset(52, 0)
-        self._title.Size = UDim2.new(1, -52, 0, 24)
+        self._title.Size = UDim2.new(1, -142, 0, 24)
+        self._modeToggleButton.Size = UDim2.fromOffset(78, 32)
         self._title.TextSize = 16
         self._subtitle.Visible = false
         self._menuButton.Visible = true
@@ -888,7 +952,8 @@ function Window:ApplyResponsive(viewportSize: Vector2, breakpoint: string)
         self._header.Size = UDim2.new(1, -40, 0, 42)
         self._headerRule.Position = UDim2.fromOffset(0, 62)
         self._title.Position = UDim2.fromOffset(0, 0)
-        self._title.Size = UDim2.new(1, 0, 0, 22)
+        self._title.Size = UDim2.new(1, -110, 0, 22)
+        self._modeToggleButton.Size = UDim2.fromOffset(90, 32)
         self._title.TextSize = 18
         self._subtitle.Visible = true
         self._menuButton.Visible = false
@@ -1659,7 +1724,7 @@ function Root:_create()
         container.Face = self.Options.Face or Enum.NormalId.Front
         container.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
         container.PixelsPerStud = self.Options.PixelsPerStud or 50
-        container.Parent = adornee
+        container.Parent = playerGui
         if mode == "Hybrid" then
             overlay = Instance.new("ScreenGui")
             overlay.Name = "NebulaOverlay"

@@ -31,6 +31,12 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     stroke.Color = theme.Border
     stroke.Transparency = 0.12
     stroke.Parent = frame
+    local glow = Instance.new("UIStroke")
+    glow.Name = "NebulaGlow"
+    glow.Color = theme.AccentSecondary
+    glow.Thickness = 4
+    glow.Transparency = 0.88
+    glow.Parent = frame
 
     local header = Instance.new("Frame")
     header.BackgroundTransparency = 1
@@ -227,8 +233,8 @@ function Window:ApplyResponsive(viewportSize: Vector2, breakpoint: string)
     local width
     local height
     if compact then
-        width = math.clamp(math.floor(viewportSize.X * 0.88), 300, 760)
-        height = math.clamp(math.floor(viewportSize.Y * 0.84), 280, 640)
+        width = math.clamp(math.floor(viewportSize.X * 0.92), 280, 720)
+        height = math.clamp(math.floor(viewportSize.Y * 0.78), 300, 560)
     else
         width = math.max(math.min(900, viewportSize.X - 32), 1)
         height = math.max(math.min(620, viewportSize.Y - 48), 1)

@@ -9,7 +9,7 @@ local Responsive = require(script.Parent.Parent.Utilities.Responsive)
 local Window = {}
 Window.__index = Window
 
-function Window.new(root: Instance, options: {[string]: any}, theme, animations, maid)
+function Window.new(root: Instance, options: {[string]: any}, theme, animations, maid, onRenderModeToggle)
     local frame = Instance.new("Frame")
     frame.Name = "NebulaWindow"
     frame.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -53,7 +53,7 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     headerRule.Parent = frame
     local title = Instance.new("TextLabel")
     title.BackgroundTransparency = 1
-    title.Size = UDim2.new(1, 0, 0, 22)
+    title.Size = UDim2.new(1, -110, 0, 22)
     title.Font = Enum.Font.GothamBold
     title.Text = options.Title or "Nebula"
     title.TextColor3 = theme.Text
@@ -63,13 +63,35 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     local subtitle = Instance.new("TextLabel")
     subtitle.BackgroundTransparency = 1
     subtitle.Position = UDim2.fromOffset(0, 23)
-    subtitle.Size = UDim2.new(1, 0, 0, 16)
+    subtitle.Size = UDim2.new(1, -110, 0, 16)
     subtitle.Font = Enum.Font.Gotham
     subtitle.Text = options.Subtitle or "Interface runtime"
     subtitle.TextColor3 = theme.TextMuted
     subtitle.TextSize = 11
     subtitle.TextXAlignment = Enum.TextXAlignment.Left
     subtitle.Parent = header
+
+    local modeButton = Instance.new("TextButton")
+    modeButton.Name = "RenderModeToggle"
+    modeButton.AnchorPoint = Vector2.new(1, 0.5)
+    modeButton.Position = UDim2.new(1, 0, 0.5, 0)
+    modeButton.Size = UDim2.fromOffset(90, 32)
+    modeButton.BackgroundColor3 = theme.SurfaceSecondary
+    modeButton.BorderSizePixel = 0
+    modeButton.AutoButtonColor = false
+    modeButton.Font = Enum.Font.GothamMedium
+    modeButton.Text = "2D  ↕"
+    modeButton.TextColor3 = theme.Text
+    modeButton.TextSize = 12
+    modeButton.ZIndex = 3
+    modeButton.Parent = header
+    local modeCorner = Instance.new("UICorner")
+    modeCorner.CornerRadius = UDim.new(0, 9)
+    modeCorner.Parent = modeButton
+    local modeStroke = Instance.new("UIStroke")
+    modeStroke.Color = theme.Border
+    modeStroke.Transparency = 0.1
+    modeStroke.Parent = modeButton
 
     local menuButton = Instance.new("TextButton")
     menuButton.Name = "MobileMenu"
@@ -136,11 +158,23 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     self._title = title
     self._subtitle = subtitle
     self._menuButton = menuButton
+    self._modeToggleButton = modeButton
     self._menuOpen = false
     self._compact = false
     self._tabs = {}
     self._active = nil
     maid:Give(self)
+    self.Maid:Give(modeButton.MouseEnter:Connect(function()
+        animations:Play(modeButton, { BackgroundColor3 = theme.Surface }, "quick")
+        animations:Play(modeStroke, { Transparency = 0 }, "quick")
+    end))
+    self.Maid:Give(modeButton.MouseLeave:Connect(function()
+        animations:Play(modeButton, { BackgroundColor3 = theme.SurfaceSecondary }, "quick")
+        animations:Play(modeStroke, { Transparency = 0.1 }, "quick")
+    end))
+    self.Maid:Give(modeButton.Activated:Connect(function()
+        if onRenderModeToggle then onRenderModeToggle() end
+    end))
     self.Maid:Give(menuButton.Activated:Connect(function()
         self:SetMenuOpen(not self._menuOpen)
     end))
@@ -185,6 +219,13 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
         end
     end))
     return self
+end
+
+function Window:SetRenderModeLabel(mode: string)
+    if not self._modeToggleButton then
+        return
+    end
+    self._modeToggleButton.Text = mode .. "  ↕"
 end
 
 function Window:ConstrainToViewport(viewportSize: Vector2?)
@@ -248,7 +289,8 @@ function Window:ApplyResponsive(viewportSize: Vector2, breakpoint: string)
         self._header.Size = UDim2.new(1, -28, 0, 40)
         self._headerRule.Position = UDim2.fromOffset(0, 58)
         self._title.Position = UDim2.fromOffset(52, 0)
-        self._title.Size = UDim2.new(1, -52, 0, 24)
+        self._title.Size = UDim2.new(1, -142, 0, 24)
+        self._modeToggleButton.Size = UDim2.fromOffset(78, 32)
         self._title.TextSize = 16
         self._subtitle.Visible = false
         self._menuButton.Visible = true
@@ -284,7 +326,8 @@ function Window:ApplyResponsive(viewportSize: Vector2, breakpoint: string)
         self._header.Size = UDim2.new(1, -40, 0, 42)
         self._headerRule.Position = UDim2.fromOffset(0, 62)
         self._title.Position = UDim2.fromOffset(0, 0)
-        self._title.Size = UDim2.new(1, 0, 0, 22)
+        self._title.Size = UDim2.new(1, -110, 0, 22)
+        self._modeToggleButton.Size = UDim2.fromOffset(90, 32)
         self._title.TextSize = 18
         self._subtitle.Visible = true
         self._menuButton.Visible = false

@@ -1,7 +1,6 @@
 --!strict
 
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 
 local Maid = require(script.Core.Maid)
 local Manager = require(script.Theme.Manager)
@@ -23,6 +22,7 @@ function Nebula.new(options: {[string]: any}?)
         Debug = options.Debug == true,
         _componentCount = 0,
         _destroyed = false,
+        _windows = {},
     }, Nebula)
     self.ThemeManager = Manager.new(options.Theme)
     self.Animations = Animator.new(options.ReducedMotion)
@@ -46,7 +46,7 @@ function Nebula.new(options: {[string]: any}?)
         self:_applyResponsive()
     end))
     self._breakpoint = Responsive.GetBreakpoint(workspace.CurrentCamera.ViewportSize.X)
-    self._applyResponsive()
+    self:_applyResponsive()
     return self
 end
 
@@ -54,6 +54,8 @@ function Nebula:CreateWindow(options: {[string]: any}?)
     assert(not self._destroyed, "Cannot create a window after Nebula:Destroy()")
     local window = Window.new(self._root, options or {}, self:GetTheme(), self.Animations, self.Maid)
     self._componentCount += 1
+    table.insert(self._windows, window)
+    window:SetResponsive(self._breakpoint == "Compact")
     return window
 end
 
@@ -77,9 +79,28 @@ function Nebula:ResetTheme()
     self.ThemeManager:Reset()
 end
 
+function Nebula:CanUseRenderMode(mode: string): boolean
+    if mode == "2D" then
+        return true
+    end
+    local adornee = self.Root.Options.Adornee
+    return typeof(adornee) == "Instance" and adornee:IsA("BasePart")
+end
+
+function Nebula:GetRenderModes(): {{Name: string, Available: boolean, Reason: string?}}
+    local hasAdornee = self:CanUseRenderMode("3D")
+    return {
+        { Name = "2D", Available = true },
+        { Name = "3D", Available = hasAdornee, Reason = hasAdornee and nil or "Requires a BasePart Adornee" },
+        { Name = "Hybrid", Available = hasAdornee, Reason = hasAdornee and nil or "Requires a BasePart Adornee" },
+    }
+end
+
 function Nebula:SetRenderMode(mode: string, options: {[string]: any}?)
+    assert(self:CanUseRenderMode(mode), ("Nebula render mode %s requires a BasePart Adornee"):format(tostring(mode)))
     self.Root:SetMode(mode, options)
     self._root = self.Root.Instance
+    self:_applyResponsive()
 end
 
 function Nebula:SetDebug(enabled: boolean)
@@ -107,23 +128,17 @@ end
 
 function Nebula:_applyTheme(theme)
     self.Toasts.Theme = theme
+    for _, window in ipairs(self._windows) do
+        window.Theme = theme
+    end
 end
 
 function Nebula:_applyResponsive()
     if not self._root then return end
     local compact = self._breakpoint == "Compact"
-    for _, child in ipairs(self._root:GetChildren()) do
-        if child.Name == "NebulaWindow" then
-            child.Size = compact and UDim2.new(1, -24, 1, -48) or UDim2.fromOffset(820, 520)
-            local navigation = child:FindFirstChild("Navigation")
-            local content = child:FindFirstChild("Content")
-            if navigation and navigation:IsA("GuiObject") then
-                navigation.Visible = not compact
-            end
-            if content and content:IsA("GuiObject") then
-                content.Position = compact and UDim2.fromOffset(16, 78) or UDim2.fromOffset(204, 78)
-                content.Size = compact and UDim2.new(1, -32, 1, -98) or UDim2.new(1, -224, 1, -98)
-            end
+    for _, window in ipairs(self._windows) do
+        if window and window.Instance and window.Instance.Parent then
+            window:SetResponsive(compact)
         end
     end
 end
@@ -133,6 +148,7 @@ function Nebula:Destroy()
         return
     end
     self._destroyed = true
+    table.clear(self._windows)
     self.Maid:Destroy()
 end
 

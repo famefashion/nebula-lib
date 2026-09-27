@@ -3,9 +3,9 @@
 local Responsive = {}
 
 function Responsive.GetBreakpoint(width: number): string
-    if width < 640 then
+    if width < 720 then
         return "Compact"
-    elseif width < 1024 then
+    elseif width < 1100 then
         return "Regular"
     end
     return "Wide"

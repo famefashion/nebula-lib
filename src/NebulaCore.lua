@@ -14,6 +14,57 @@ local Nebula = {}
 Nebula.__index = Nebula
 Nebula.VERSION = "0.2.0"
 
+function Nebula:_createModeOverlay(playerGui: PlayerGui, displayOrder: number?)
+    local overlay = Instance.new("ScreenGui")
+    overlay.Name = "NebulaModeOverlay"
+    overlay.ResetOnSpawn = false
+    overlay.IgnoreGuiInset = false
+    overlay.ZIndexBehavior = Enum.ZIndexBehavior.Global
+    overlay.DisplayOrder = (displayOrder or 20) + 100
+    overlay.Parent = playerGui
+
+    local button = Instance.new("TextButton")
+    button.Name = "RenderModeToggle"
+    button.AnchorPoint = Vector2.new(1, 0)
+    button.Position = UDim2.new(1, -16, 0, 16)
+    button.Size = UDim2.fromOffset(142, 38)
+    button.BackgroundColor3 = self:GetTheme().Accent
+    button.BorderSizePixel = 0
+    button.AutoButtonColor = false
+    button.Active = true
+    button.Selectable = true
+    button.Font = Enum.Font.GothamBold
+    button.TextColor3 = self:GetTheme().Background
+    button.TextSize = 13
+    button.ZIndex = 100
+    button.Parent = overlay
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 11)
+    corner.Parent = button
+    local stroke = Instance.new("UIStroke")
+    stroke.Name = "Glow"
+    stroke.Color = self:GetTheme().AccentSecondary
+    stroke.Thickness = 2
+    stroke.Transparency = 0.15
+    stroke.Parent = button
+
+    self._modeOverlay = overlay
+    self._modeOverlayButton = button
+    self._modeOverlayStroke = stroke
+    self.Maid:Give(overlay)
+    self.Maid:Give(button.Activated:Connect(function()
+        self:_cycleRenderMode()
+    end))
+    self:_updateModeOverlay(self.Root.Mode)
+end
+
+function Nebula:_updateModeOverlay(mode: string)
+    if self._modeOverlayButton and self._modeOverlayButton.Parent then
+        self._modeOverlayButton.Text = "NEBULA  •  " .. mode .. "  ↕"
+    end
+end
+
 function Nebula.new(options: {[string]: any}?)
     options = options or {}
     local playerGui = options.Parent or Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -36,8 +87,21 @@ function Nebula.new(options: {[string]: any}?)
         Face = options.Face,
         PixelsPerStud = options.PixelsPerStud,
         DisplayOrder = options.DisplayOrder,
+        CanvasSize = options.CanvasSize,
+        AlwaysOnTop = options.AlwaysOnTop,
+        Brightness = options.Brightness,
+        Glow = options.Glow,
+        GlowColor = options.GlowColor,
+        GlowBrightness = options.GlowBrightness,
+        GlowRange = options.GlowRange,
+        FollowLocalPlayer = options.FollowLocalPlayer,
+        FollowDistance = options.FollowDistance,
+        FollowHeight = options.FollowHeight,
+        HoverAmplitude = options.HoverAmplitude,
+        HoverSpeed = options.HoverSpeed,
     }, self.Maid, self.Animations)
     self._root = self.Root.Instance
+    self:_createModeOverlay(playerGui, options.DisplayOrder)
     self.Toasts = ToastStack.new(self._root, self:GetTheme(), self.Animations, self.Maid)
     self.Commands = Command.new(self._root, options.Commands, self:GetTheme(), self.Animations, self.Maid)
     self.Maid:Give(self.ThemeManager:OnChanged(function(theme)
@@ -152,6 +216,7 @@ function Nebula:SetRenderMode(mode: string, options: {[string]: any}?)
         self.Root:SetMode(mode, options)
         self._root = self.Root.Instance
         assert(self._root, "Nebula render root was not created")
+        self:_updateModeOverlay(mode)
         self.Toasts = ToastStack.new(self._root, self:GetTheme(), self.Animations, self.Maid)
         self.Commands = Command.new(self._root, commands, self:GetTheme(), self.Animations, self.Maid)
         for _, window in ipairs(self._windows) do
@@ -193,6 +258,13 @@ end
 function Nebula:_applyTheme(theme)
     if self.Toasts then
         self.Toasts.Theme = theme
+    end
+    if self._modeOverlayButton and self._modeOverlayButton.Parent then
+        self._modeOverlayButton.BackgroundColor3 = theme.Accent
+        self._modeOverlayButton.TextColor3 = theme.Background
+    end
+    if self._modeOverlayStroke and self._modeOverlayStroke.Parent then
+        self._modeOverlayStroke.Color = theme.AccentSecondary
     end
 end
 

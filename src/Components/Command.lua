@@ -106,4 +106,8 @@ function Command:Close()
     self._input:ReleaseFocus()
 end
 
+function Command:Destroy()
+    Component.Destroy(self)
+end
+
 return Command

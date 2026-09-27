@@ -3,12 +3,12 @@
 ## Requirements
 
 - Roblox Studio with Luau support.
-- A LocalScript using the `src/` ModuleScript entry, or a trusted compatible runtime that provides `game:HttpGet` and `loadstring`.
+- A trusted compatible runtime that provides `game:HttpGet` and `loadstring`.
 
 ## Create an app
 
 ```lua
-local Nebula = require(game:GetService("ReplicatedStorage").Packages.Nebula)
+local Nebula = loadstring(game:HttpGet("https://raw.githubusercontent.com/famefashion/nebula-lib/main/dist/Nebula.lua"))()
 local app = Nebula.new({
     Parent = game:GetService("Players").LocalPlayer.PlayerGui,
 })
@@ -27,5 +27,6 @@ surface:AddButton({
 
 `Nebula.new` owns every created root, connection, tween, and component. Call `app:Destroy()` when your feature is unloaded.
 
-For loadstring use, fetch `dist/Nebula.lua` instead. It is the complete runtime
-package and does not call `require(script...)` or download additional modules.
+The fetched `dist/Nebula.lua` file is the complete runtime package. It does not
+call `require(script...)` or download additional modules. For a full working
+example, see [`examples/LoadstringExample.lua`](../examples/LoadstringExample.lua).

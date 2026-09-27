@@ -152,17 +152,20 @@ The sections below are interactive. Open a category to see the complete shipped 
 
 ## ⌁ Quick start
 
-`src/` is the maintainable ModuleScript source tree. `dist/Nebula.lua` is the
-generated, self-contained loadstring package. Rebuild it with
-`npm run build` after changing source modules.
+`dist/Nebula.lua` is the generated, self-contained loadstring package. The
+maintainable files under `src/` are only used to rebuild it. Rebuild the package
+with `npm run build` after changing source modules.
 
 ```lua
-local Nebula = require(game:GetService("ReplicatedStorage").Packages.Nebula)
+local Nebula = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/famefashion/nebula-lib/main/dist/Nebula.lua"
+))()
 
 local app = Nebula.new({
-    Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"),
-    RenderMode = "2D",
+    RenderMode = "3D",
     Theme = "Nebula Dark",
+    FollowPlayer = true,
+    GlowBrightness = 1.25,
 })
 
 local window = app:CreateWindow({
@@ -236,7 +239,7 @@ local app = Nebula.new({
 })
 ```
 
-For a full runtime check, paste [`examples/LoadstringSmokeTest.lua`](examples/LoadstringSmokeTest.lua) into your controlled executor. It checks the loader, documented runtime methods, controls, commands, themes, rendering mode, and animations. If a check fails, it prints the traceback and attempts to copy it with `setclipboard` or `toclipboard`.
+For a ready-to-run UI, paste [`examples/LoadstringExample.lua`](examples/LoadstringExample.lua) into your controlled executor. For a full runtime check, use [`examples/LoadstringSmokeTest.lua`](examples/LoadstringSmokeTest.lua).
 
 Remote code executes with the permissions of its host. Review the source and pin a release tag or commit SHA for anything you expect to keep stable; the `main` URL intentionally follows the latest commit.
 

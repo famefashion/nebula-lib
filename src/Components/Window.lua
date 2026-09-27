@@ -42,6 +42,8 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     header.BackgroundTransparency = 1
     header.Position = UDim2.fromOffset(20, 16)
     header.Size = UDim2.new(1, -40, 0, 42)
+    header.ClipsDescendants = false
+    header.ZIndex = 50
     header.Parent = frame
     local headerRule = Instance.new("Frame")
     headerRule.Name = "HeaderRule"
@@ -75,15 +77,19 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     modeButton.Name = "RenderModeToggle"
     modeButton.AnchorPoint = Vector2.new(1, 0.5)
     modeButton.Position = UDim2.new(1, 0, 0.5, 0)
-    modeButton.Size = UDim2.fromOffset(90, 32)
+    modeButton.Size = UDim2.fromOffset(112, 34)
     modeButton.BackgroundColor3 = theme.SurfaceSecondary
     modeButton.BorderSizePixel = 0
     modeButton.AutoButtonColor = false
     modeButton.Font = Enum.Font.GothamMedium
-    modeButton.Text = "2D  ↕"
+    modeButton.Text = "MODE: 2D  ↕"
     modeButton.TextColor3 = theme.Text
-    modeButton.TextSize = 12
-    modeButton.ZIndex = 3
+    modeButton.TextSize = 13
+    modeButton.TextWrapped = false
+    modeButton.Visible = true
+    modeButton.Active = true
+    modeButton.Selectable = true
+    modeButton.ZIndex = 100
     modeButton.Parent = header
     local modeCorner = Instance.new("UICorner")
     modeCorner.CornerRadius = UDim.new(0, 9)
@@ -225,7 +231,7 @@ function Window:SetRenderModeLabel(mode: string)
     if not self._modeToggleButton then
         return
     end
-    self._modeToggleButton.Text = mode .. "  ↕"
+    self._modeToggleButton.Text = "MODE: " .. mode .. "  ↕"
 end
 
 function Window:ConstrainToViewport(viewportSize: Vector2?)
@@ -236,6 +242,10 @@ function Window:ConstrainToViewport(viewportSize: Vector2?)
     end
 
     local frame = self.Instance
+    local surfaceRoot = frame.Parent
+    if surfaceRoot and surfaceRoot:IsA("SurfaceGui") then
+        viewport = surfaceRoot.CanvasSize
+    end
     local halfWidth = frame.AbsoluteSize.X / 2
     local halfHeight = frame.AbsoluteSize.Y / 2
     local margin = 12
@@ -271,9 +281,15 @@ function Window:ApplyResponsive(viewportSize: Vector2, breakpoint: string)
         or viewportSize.X < 760
         or (touchDevice and viewportSize.X < 1100)
     self._compact = compact
+    local surfaceRoot = self.Instance.Parent
+    local canvasSize = surfaceRoot and surfaceRoot:IsA("SurfaceGui") and surfaceRoot.CanvasSize or nil
     local width
     local height
-    if compact then
+    if canvasSize and canvasSize.X > 0 and canvasSize.Y > 0 then
+        compact = false
+        width = math.floor(canvasSize.X * 0.92)
+        height = math.floor(canvasSize.Y * 0.92)
+    elseif compact then
         width = math.clamp(math.floor(viewportSize.X * 0.92), 280, 720)
         height = math.clamp(math.floor(viewportSize.Y * 0.78), 300, 560)
     else
@@ -290,7 +306,7 @@ function Window:ApplyResponsive(viewportSize: Vector2, breakpoint: string)
         self._headerRule.Position = UDim2.fromOffset(0, 58)
         self._title.Position = UDim2.fromOffset(52, 0)
         self._title.Size = UDim2.new(1, -142, 0, 24)
-        self._modeToggleButton.Size = UDim2.fromOffset(78, 32)
+        self._modeToggleButton.Size = UDim2.fromOffset(112, 32)
         self._title.TextSize = 16
         self._subtitle.Visible = false
         self._menuButton.Visible = true
@@ -327,7 +343,7 @@ function Window:ApplyResponsive(viewportSize: Vector2, breakpoint: string)
         self._headerRule.Position = UDim2.fromOffset(0, 62)
         self._title.Position = UDim2.fromOffset(0, 0)
         self._title.Size = UDim2.new(1, -110, 0, 22)
-        self._modeToggleButton.Size = UDim2.fromOffset(90, 32)
+        self._modeToggleButton.Size = UDim2.fromOffset(112, 34)
         self._title.TextSize = 18
         self._subtitle.Visible = true
         self._menuButton.Visible = false

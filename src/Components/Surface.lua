@@ -27,6 +27,12 @@ function Surface.new(parent: Instance, options: {[string]: any}, theme, animatio
     stroke.Color = theme.Border
     stroke.Transparency = 0.2
     stroke.Parent = frame
+    local glow = Instance.new("UIStroke")
+    glow.Name = "NebulaGlow"
+    glow.Color = theme.AccentSecondary
+    glow.Thickness = 3
+    glow.Transparency = 0.84
+    glow.Parent = frame
 
     local self = Component.new(frame, theme, animations)
     setmetatable(self, Surface)

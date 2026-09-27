@@ -138,5 +138,3 @@ for _, themeName in ipairs({ "Nebula Dark", "Aurora", "Graphite", "Midnight" }) 
 end
 
 app:Toast("Player Companion ready. Press P for commands.", "success", 4)
-
--- Call app:Destroy() from your own unload handler when this feature is finished.

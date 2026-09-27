@@ -6,9 +6,12 @@ local Nebula = loadstring(game:HttpGet(
 ))()
 
 local Players = game:GetService("Players")
+local displayPart = workspace:FindFirstChild("NebulaDisplay")
 local App = Nebula.new({
     Parent = Players.LocalPlayer:WaitForChild("PlayerGui"),
     RenderMode = "2D",
+    -- Optional: provide a BasePart to enable the built-in 2D/3D switch.
+    Adornee = displayPart,
     Theme = "Nebula Dark",
 })
 
@@ -20,7 +23,6 @@ local Window = App:CreateWindow({
 local Overview = Window:AddTab("Overview", "◈")
 local OverviewSurface = Overview:AddSurface({
     Title = "Welcome",
-    Size = UDim2.new(1, 0, 0, 140),
 })
 Overview:AddText("This window is running entirely from dist/Nebula.lua.")
 OverviewSurface:AddButton({
@@ -33,7 +35,6 @@ OverviewSurface:AddButton({
 local Controls = Window:AddTab("Controls", "✦")
 local ControlsSurface = Controls:AddSurface({
     Title = "Interactive controls",
-    Size = UDim2.new(1, 0, 0, 190),
 })
 local Notifications = ControlsSurface:AddToggle({
     Label = "Enable notifications",
@@ -58,7 +59,6 @@ end)
 local Diagnostics = Window:AddTab("Diagnostics", "⌁")
 local DiagnosticsSurface = Diagnostics:AddSurface({
     Title = "Runtime status",
-    Size = UDim2.new(1, 0, 0, 160),
 })
 Diagnostics:AddText("Use this tab to inspect the current runtime state.")
 DiagnosticsSurface:AddButton({

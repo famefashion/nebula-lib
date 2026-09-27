@@ -32,7 +32,10 @@ function Root:_create()
     if mode == "2D" then
         container = Instance.new("ScreenGui")
         container.ResetOnSpawn = false
-        container.IgnoreGuiInset = true
+        -- Keep the window below Roblox's top bar and device safe area.
+        -- This matters most on touch devices where the CoreGui controls
+        -- otherwise overlap the draggable header.
+        container.IgnoreGuiInset = false
         container.DisplayOrder = self.Options.DisplayOrder or 20
         container.Parent = playerGui
     else
@@ -47,7 +50,7 @@ function Root:_create()
         if mode == "Hybrid" then
             local overlay = Instance.new("ScreenGui")
             overlay.ResetOnSpawn = false
-            overlay.IgnoreGuiInset = true
+            overlay.IgnoreGuiInset = false
             overlay.DisplayOrder = self.Options.DisplayOrder or 20
             overlay.Parent = playerGui
             self._maid:Give(overlay)

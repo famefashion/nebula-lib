@@ -31,7 +31,7 @@ local base = {
     Transparency = 0.06,
     Blur = 0,
     AnimationSpeed = 1,
-    ControlHeight = 38,
+    ControlHeight = 42,
 }
 
 local function derive(overrides)

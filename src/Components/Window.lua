@@ -4,6 +4,7 @@ local UserInputService = game:GetService("UserInputService")
 local Component = require(script.Parent.Component)
 local Surface = require(script.Parent.Surface)
 local Layout = require(script.Parent.Parent.Layout.Layout)
+local Responsive = require(script.Parent.Parent.Utilities.Responsive)
 
 local Window = {}
 Window.__index = Window
@@ -102,6 +103,10 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     setmetatable(self, Window)
     self._navigation = nav
     self._content = content
+    self._header = header
+    self._headerRule = headerRule
+    self._title = title
+    self._subtitle = subtitle
     self._tabs = {}
     self._active = nil
     maid:Give(self)
@@ -176,39 +181,64 @@ function Window:ApplyResponsive(viewportSize: Vector2, breakpoint: string)
         return
     end
 
-    local compact = breakpoint == "Compact" or viewportSize.X < 760
-    local width = math.max(math.min(820, viewportSize.X - (compact and 24 or 32)), 1)
-    local height = math.max(math.min(520, viewportSize.Y - (compact and 40 or 48)), 1)
+    local touchDevice = UserInputService.TouchEnabled
+    local compact = breakpoint == "Compact"
+        or viewportSize.X < 760
+        or (touchDevice and viewportSize.X < 1100)
+    local width = math.max(math.min(900, viewportSize.X - (compact and 16 or 32)), 1)
+    local height = math.max(math.min(620, viewportSize.Y - (compact and 16 or 48)), 1)
     self.Instance.Size = UDim2.fromOffset(width, height)
 
     local layout = self._navigation:FindFirstChildOfClass("UIListLayout")
     if compact then
-        self._navigation.Position = UDim2.fromOffset(12, 68)
-        self._navigation.Size = UDim2.new(1, -24, 0, 38)
+        self._header.Position = UDim2.fromOffset(14, 8)
+        self._header.Size = UDim2.new(1, -28, 0, 42)
+        self._headerRule.Position = UDim2.fromOffset(0, 58)
+        self._title.TextSize = 16
+        self._subtitle.Visible = false
+        self._navigation.Position = UDim2.fromOffset(10, 68)
+        self._navigation.Size = UDim2.new(1, -20, 0, Responsive.TouchTarget(true))
         self._navigation.AutomaticCanvasSize = Enum.AutomaticSize.X
         self._navigation.ScrollingDirection = Enum.ScrollingDirection.X
+        self._navigation.ScrollBarThickness = 0
         if layout then
             layout.FillDirection = Enum.FillDirection.Horizontal
             layout.VerticalAlignment = Enum.VerticalAlignment.Center
+            layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+            layout.Padding = UDim.new(0, 8)
         end
-        self._content.Position = UDim2.fromOffset(12, 116)
-        self._content.Size = UDim2.new(1, -24, 1, -128)
+        self._content.Position = UDim2.fromOffset(10, 126)
+        self._content.Size = UDim2.new(1, -20, 1, -138)
+        self._content.ScrollBarThickness = 2
         for _, tab in ipairs(self._tabs) do
-            tab.Button.Size = UDim2.fromOffset(128, 34)
+            tab.Button.Size = UDim2.fromOffset(144, Responsive.TouchTarget(true))
+            tab.Button.TextXAlignment = Enum.TextXAlignment.Center
+            tab.Button.TextSize = 13
         end
     else
+        self._header.Position = UDim2.fromOffset(20, 16)
+        self._header.Size = UDim2.new(1, -40, 0, 42)
+        self._headerRule.Position = UDim2.fromOffset(0, 62)
+        self._title.TextSize = 18
+        self._subtitle.Visible = true
         self._navigation.Position = UDim2.fromOffset(20, 78)
         self._navigation.Size = UDim2.new(0, 164, 1, -98)
         self._navigation.AutomaticCanvasSize = Enum.AutomaticSize.Y
         self._navigation.ScrollingDirection = Enum.ScrollingDirection.Y
+        self._navigation.ScrollBarThickness = 0
         if layout then
             layout.FillDirection = Enum.FillDirection.Vertical
             layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+            layout.VerticalAlignment = Enum.VerticalAlignment.Top
+            layout.Padding = UDim.new(0, 6)
         end
         self._content.Position = UDim2.fromOffset(204, 78)
         self._content.Size = UDim2.new(1, -224, 1, -98)
+        self._content.ScrollBarThickness = 3
         for _, tab in ipairs(self._tabs) do
-            tab.Button.Size = UDim2.new(1, 0, 0, 34)
+            tab.Button.Size = UDim2.new(1, 0, 0, Responsive.TouchTarget(false))
+            tab.Button.TextXAlignment = Enum.TextXAlignment.Left
+            tab.Button.TextSize = 12
         end
     end
 
@@ -221,7 +251,7 @@ function Window:AddTab(name: string, icon: string?)
     tabButton.AutoButtonColor = false
     tabButton.BackgroundColor3 = self.Theme.SurfaceSecondary
     tabButton.BackgroundTransparency = 0.4
-    tabButton.Size = UDim2.new(1, 0, 0, 34)
+    tabButton.Size = UDim2.new(1, 0, 0, Responsive.TouchTarget(false))
     tabButton.Font = Enum.Font.GothamMedium
     tabButton.Text = (icon and icon .. "  " or "") .. name
     tabButton.TextColor3 = self.Theme.TextSecondary
@@ -230,6 +260,7 @@ function Window:AddTab(name: string, icon: string?)
     tabButton.Parent = self._navigation
     local padding = Instance.new("UIPadding")
     padding.PaddingLeft = UDim.new(0, 12)
+    padding.PaddingRight = UDim.new(0, 12)
     padding.Parent = tabButton
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 8)

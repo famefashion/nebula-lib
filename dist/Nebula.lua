@@ -70,22 +70,24 @@ end
 
 function Nebula:_addSettingsTab(window, options)
     local settings = window:AddTab("UI Settings", "⚙")
-    settings:AddText("Built-in display controls for this Nebula window.")
+    settings:AddText("Built into every Nebula window. Use the controls below to adapt the interface to your device.")
 
     local display = settings:AddSurface({
         Title = "Display mode",
-        Size = UDim2.new(1, 0, 0, 142),
     })
+    local adornee = self.Root.Options.Adornee
+    local canUse3D = adornee and adornee:IsA("BasePart")
     display:AddText(
-        options.Adornee
-            and "Switch between a ScreenGui and a SurfaceGui without rebuilding your window."
-            or "2D is active. Pass Adornee = a BasePart to enable 3D surface mode.",
+        canUse3D
+            and "Switch between a ScreenGui and a SurfaceGui without rebuilding this window."
+            or "2D is active. Pass Adornee = a BasePart when creating Nebula to enable 3D mode.",
         { Height = 36, TextSize = 12 }
     )
     local surfaceMode = display:AddToggle({
         Label = "Use 3D surface UI",
-        Default = self.Root.Mode == "3D",
+        Default = self.Root.Mode ~= "2D",
     })
+    window._displayModeToggle = surfaceMode
     surfaceMode:OnChanged(function(enabled)
         if enabled and not self.Root.Options.Adornee then
             surfaceMode:Set(false)
@@ -97,7 +99,6 @@ function Nebula:_addSettingsTab(window, options)
 
     local behavior = settings:AddSurface({
         Title = "Accessibility",
-        Size = UDim2.new(1, 0, 0, 120),
     })
     local reducedMotion = behavior:AddToggle({
         Label = "Reduced motion",
@@ -151,6 +152,11 @@ function Nebula:SetRenderMode(mode: string, options: {[string]: any}?)
     end
     self.Toasts = ToastStack.new(self._root, self:GetTheme(), self.Animations, self.Maid)
     self.Commands = Command.new(self._root, commands, self:GetTheme(), self.Animations, self.Maid)
+    for _, window in ipairs(self._windows) do
+        if window._displayModeToggle then
+            window._displayModeToggle:Set(mode ~= "2D")
+        end
+    end
     self:_applyResponsive()
 end
 
@@ -609,6 +615,7 @@ local UserInputService = game:GetService("UserInputService")
 local Component = require("Components.Component")
 local Surface = require("Components.Surface")
 local Layout = require("Layout.Layout")
+local Responsive = require("Utilities.Responsive")
 
 local Window = {}
 Window.__index = Window
@@ -707,6 +714,10 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     setmetatable(self, Window)
     self._navigation = nav
     self._content = content
+    self._header = header
+    self._headerRule = headerRule
+    self._title = title
+    self._subtitle = subtitle
     self._tabs = {}
     self._active = nil
     maid:Give(self)
@@ -781,39 +792,64 @@ function Window:ApplyResponsive(viewportSize: Vector2, breakpoint: string)
         return
     end
 
-    local compact = breakpoint == "Compact" or viewportSize.X < 760
-    local width = math.max(math.min(820, viewportSize.X - (compact and 24 or 32)), 1)
-    local height = math.max(math.min(520, viewportSize.Y - (compact and 40 or 48)), 1)
+    local touchDevice = UserInputService.TouchEnabled
+    local compact = breakpoint == "Compact"
+        or viewportSize.X < 760
+        or (touchDevice and viewportSize.X < 1100)
+    local width = math.max(math.min(900, viewportSize.X - (compact and 16 or 32)), 1)
+    local height = math.max(math.min(620, viewportSize.Y - (compact and 16 or 48)), 1)
     self.Instance.Size = UDim2.fromOffset(width, height)
 
     local layout = self._navigation:FindFirstChildOfClass("UIListLayout")
     if compact then
-        self._navigation.Position = UDim2.fromOffset(12, 68)
-        self._navigation.Size = UDim2.new(1, -24, 0, 38)
+        self._header.Position = UDim2.fromOffset(14, 8)
+        self._header.Size = UDim2.new(1, -28, 0, 42)
+        self._headerRule.Position = UDim2.fromOffset(0, 58)
+        self._title.TextSize = 16
+        self._subtitle.Visible = false
+        self._navigation.Position = UDim2.fromOffset(10, 68)
+        self._navigation.Size = UDim2.new(1, -20, 0, Responsive.TouchTarget(true))
         self._navigation.AutomaticCanvasSize = Enum.AutomaticSize.X
         self._navigation.ScrollingDirection = Enum.ScrollingDirection.X
+        self._navigation.ScrollBarThickness = 0
         if layout then
             layout.FillDirection = Enum.FillDirection.Horizontal
             layout.VerticalAlignment = Enum.VerticalAlignment.Center
+            layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+            layout.Padding = UDim.new(0, 8)
         end
-        self._content.Position = UDim2.fromOffset(12, 116)
-        self._content.Size = UDim2.new(1, -24, 1, -128)
+        self._content.Position = UDim2.fromOffset(10, 126)
+        self._content.Size = UDim2.new(1, -20, 1, -138)
+        self._content.ScrollBarThickness = 2
         for _, tab in ipairs(self._tabs) do
-            tab.Button.Size = UDim2.fromOffset(128, 34)
+            tab.Button.Size = UDim2.fromOffset(144, Responsive.TouchTarget(true))
+            tab.Button.TextXAlignment = Enum.TextXAlignment.Center
+            tab.Button.TextSize = 13
         end
     else
+        self._header.Position = UDim2.fromOffset(20, 16)
+        self._header.Size = UDim2.new(1, -40, 0, 42)
+        self._headerRule.Position = UDim2.fromOffset(0, 62)
+        self._title.TextSize = 18
+        self._subtitle.Visible = true
         self._navigation.Position = UDim2.fromOffset(20, 78)
         self._navigation.Size = UDim2.new(0, 164, 1, -98)
         self._navigation.AutomaticCanvasSize = Enum.AutomaticSize.Y
         self._navigation.ScrollingDirection = Enum.ScrollingDirection.Y
+        self._navigation.ScrollBarThickness = 0
         if layout then
             layout.FillDirection = Enum.FillDirection.Vertical
             layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+            layout.VerticalAlignment = Enum.VerticalAlignment.Top
+            layout.Padding = UDim.new(0, 6)
         end
         self._content.Position = UDim2.fromOffset(204, 78)
         self._content.Size = UDim2.new(1, -224, 1, -98)
+        self._content.ScrollBarThickness = 3
         for _, tab in ipairs(self._tabs) do
-            tab.Button.Size = UDim2.new(1, 0, 0, 34)
+            tab.Button.Size = UDim2.new(1, 0, 0, Responsive.TouchTarget(false))
+            tab.Button.TextXAlignment = Enum.TextXAlignment.Left
+            tab.Button.TextSize = 12
         end
     end
 
@@ -826,7 +862,7 @@ function Window:AddTab(name: string, icon: string?)
     tabButton.AutoButtonColor = false
     tabButton.BackgroundColor3 = self.Theme.SurfaceSecondary
     tabButton.BackgroundTransparency = 0.4
-    tabButton.Size = UDim2.new(1, 0, 0, 34)
+    tabButton.Size = UDim2.new(1, 0, 0, Responsive.TouchTarget(false))
     tabButton.Font = Enum.Font.GothamMedium
     tabButton.Text = (icon and icon .. "  " or "") .. name
     tabButton.TextColor3 = self.Theme.TextSecondary
@@ -835,6 +871,7 @@ function Window:AddTab(name: string, icon: string?)
     tabButton.Parent = self._navigation
     local padding = Instance.new("UIPadding")
     padding.PaddingLeft = UDim.new(0, 12)
+    padding.PaddingRight = UDim.new(0, 12)
     padding.Parent = tabButton
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 8)
@@ -904,12 +941,14 @@ Surface.__index = Surface
 setmetatable(Surface, Component)
 
 function Surface.new(parent: Instance, options: {[string]: any}, theme, animations)
+    local autoSize = options.Size == nil
+    local topPadding = options.Title and 46 or 16
     local frame = Instance.new("Frame")
     frame.Name = options.Title or "Surface"
     frame.BackgroundColor3 = theme.Surface
     frame.BackgroundTransparency = theme.Transparency
     frame.BorderSizePixel = 0
-    frame.Size = options.Size or UDim2.new(1, 0, 0, 160)
+    frame.Size = options.Size or UDim2.new(1, 0, 0, topPadding + 16)
     frame.LayoutOrder = options.LayoutOrder or 0
     frame.Parent = parent
 
@@ -927,10 +966,22 @@ function Surface.new(parent: Instance, options: {[string]: any}, theme, animatio
     self.Content = Instance.new("Frame")
     self.Content.Name = "Content"
     self.Content.BackgroundTransparency = 1
-    self.Content.Position = UDim2.fromOffset(16, options.Title and 46 or 16)
-    self.Content.Size = UDim2.new(1, -32, 1, options.Title and -62 or -32)
+    self.Content.Position = UDim2.fromOffset(16, topPadding)
+    self.Content.Size = autoSize
+        and UDim2.new(1, -32, 0, 0)
+        or UDim2.new(1, -32, 1, options.Title and -62 or -32)
     self.Content.Parent = frame
-    Layout.Column(self.Content, { Spacing = 8 })
+    local contentLayout = Layout.Column(self.Content, { Spacing = 8 })
+
+    if autoSize then
+        local function resizeToContent()
+            local contentHeight = contentLayout.AbsoluteContentSize.Y
+            self.Content.Size = UDim2.new(1, -32, 0, contentHeight)
+            frame.Size = UDim2.new(1, 0, 0, topPadding + contentHeight + 16)
+        end
+        self.Maid:Give(contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(resizeToContent))
+        resizeToContent()
+    end
 
     if options.Title then
         local title = Instance.new("TextLabel")
@@ -1034,6 +1085,7 @@ __modules["Components.Controls.Slider"] = function(require)
 local UserInputService = game:GetService("UserInputService")
 local Component = require("Components.Component")
 local Value = require("State.Value")
+local Responsive = require("Utilities.Responsive")
 
 local Slider = {}
 Slider.__index = Slider
@@ -1046,7 +1098,7 @@ function Slider.new(parent: Instance, options: {[string]: any}, theme, animation
     local holder = Instance.new("Frame")
     holder.Name = options.Label or "Slider"
     holder.BackgroundTransparency = 1
-    holder.Size = UDim2.new(1, 0, 0, 54)
+    holder.Size = UDim2.new(1, 0, 0, math.max(theme.ControlHeight + 24, Responsive.TouchTarget(true) + 18))
     holder.Parent = parent
 
     local label = Instance.new("TextLabel")
@@ -1055,7 +1107,7 @@ function Slider.new(parent: Instance, options: {[string]: any}, theme, animation
     label.Font = Enum.Font.Gotham
     label.Text = options.Label or "Slider"
     label.TextColor3 = theme.TextSecondary
-    label.TextSize = 13
+    label.TextSize = options.TextSize or 14
     label.TextTruncate = Enum.TextTruncate.AtEnd
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = holder
@@ -1067,28 +1119,29 @@ function Slider.new(parent: Instance, options: {[string]: any}, theme, animation
     readout.TextXAlignment = Enum.TextXAlignment.Right
     readout.Parent = holder
 
-    local rail = Instance.new("Frame")
+    local rail = Instance.new("TextButton")
     rail.AnchorPoint = Vector2.new(0, 0.5)
-    rail.Position = UDim2.new(0, 0, 0, 38)
-    rail.Size = UDim2.new(1, 0, 0, 6)
+    rail.Position = UDim2.new(0, 0, 0, 42)
+    rail.Size = UDim2.new(1, 0, 0, 10)
+    rail.AutoButtonColor = false
+    rail.Text = ""
     rail.BackgroundColor3 = theme.Border
     rail.BorderSizePixel = 0
     rail.Parent = holder
     local railCorner = Instance.new("UICorner")
     railCorner.CornerRadius = UDim.new(1, 0)
     railCorner.Parent = rail
-    local fill = rail:Clone()
+    local fill = Instance.new("Frame")
     fill.Name = "Fill"
+    fill.BorderSizePixel = 0
     fill.BackgroundColor3 = theme.Accent
     fill.Size = UDim2.new((value - min) / math.max(max - min, 1), 0, 1, 0)
     fill.Parent = rail
-    local knob = Instance.new("TextButton")
+    local knob = Instance.new("Frame")
     knob.Name = "Knob"
-    knob.Text = ""
-    knob.AutoButtonColor = false
     knob.AnchorPoint = Vector2.new(0.5, 0.5)
     knob.Position = UDim2.new((value - min) / math.max(max - min, 1), 0, 0.5, 0)
-    knob.Size = UDim2.fromOffset(18, 18)
+    knob.Size = UDim2.fromOffset(26, 26)
     knob.BackgroundColor3 = theme.Text
     knob.BorderSizePixel = 0
     knob.Parent = rail
@@ -1118,9 +1171,10 @@ function Slider.new(parent: Instance, options: {[string]: any}, theme, animation
             options.OnChanged(nextValue)
         end
     end))
-    self.Maid:Give(knob.InputBegan:Connect(function(input)
+    self.Maid:Give(rail.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
+            update(input.Position.X)
         end
     end))
     self.Maid:Give(UserInputService.InputChanged:Connect(function(input)
@@ -1246,10 +1300,32 @@ return Signal
 
 end
 
+__modules["Utilities.Responsive"] = function(require)
+
+local Responsive = {}
+
+function Responsive.GetBreakpoint(width: number): string
+    if width < 640 then
+        return "Compact"
+    elseif width < 1024 then
+        return "Regular"
+    end
+    return "Wide"
+end
+
+function Responsive.TouchTarget(compact: boolean): number
+    return compact and 48 or 40
+end
+
+return Responsive
+
+end
+
 __modules["Components.Controls.Toggle"] = function(require)
 
 local Component = require("Components.Component")
 local Value = require("State.Value")
+local Responsive = require("Utilities.Responsive")
 
 local Toggle = {}
 Toggle.__index = Toggle
@@ -1259,17 +1335,17 @@ function Toggle.new(parent: Instance, options: {[string]: any}, theme, animation
     row.Name = options.Label or "Toggle"
     row.AutoButtonColor = false
     row.BackgroundTransparency = 1
-    row.Size = UDim2.new(1, 0, 0, theme.ControlHeight)
+    row.Size = UDim2.new(1, 0, 0, math.max(theme.ControlHeight, Responsive.TouchTarget(true)))
     row.Text = ""
     row.Parent = parent
 
     local label = Instance.new("TextLabel")
     label.BackgroundTransparency = 1
-    label.Size = UDim2.new(1, -58, 1, 0)
+    label.Size = UDim2.new(1, -74, 1, 0)
     label.Font = Enum.Font.Gotham
     label.Text = options.Label or "Toggle"
     label.TextColor3 = theme.TextSecondary
-    label.TextSize = 13
+    label.TextSize = options.TextSize or 14
     label.TextTruncate = Enum.TextTruncate.AtEnd
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = row
@@ -1277,7 +1353,7 @@ function Toggle.new(parent: Instance, options: {[string]: any}, theme, animation
     local track = Instance.new("Frame")
     track.AnchorPoint = Vector2.new(1, 0.5)
     track.Position = UDim2.new(1, 0, 0.5, 0)
-    track.Size = UDim2.fromOffset(42, 22)
+    track.Size = UDim2.fromOffset(50, 28)
     track.BackgroundColor3 = theme.Border
     track.BorderSizePixel = 0
     track.Parent = row
@@ -1285,14 +1361,18 @@ function Toggle.new(parent: Instance, options: {[string]: any}, theme, animation
     trackCorner.CornerRadius = UDim.new(1, 0)
     trackCorner.Parent = track
     local knob = Instance.new("Frame")
-    knob.Size = UDim2.fromOffset(16, 16)
-    knob.Position = UDim2.fromOffset(3, 3)
+    knob.Size = UDim2.fromOffset(20, 20)
+    knob.Position = UDim2.fromOffset(4, 4)
     knob.BackgroundColor3 = theme.Text
     knob.BorderSizePixel = 0
     knob.Parent = track
     local knobCorner = Instance.new("UICorner")
     knobCorner.CornerRadius = UDim.new(1, 0)
     knobCorner.Parent = knob
+    local trackStroke = Instance.new("UIStroke")
+    trackStroke.Color = theme.BorderHover
+    trackStroke.Transparency = 0.25
+    trackStroke.Parent = track
 
     local self = Component.new(row, theme, animations)
     setmetatable(self, Toggle)
@@ -1300,7 +1380,14 @@ function Toggle.new(parent: Instance, options: {[string]: any}, theme, animation
 
     local function render(value: boolean)
         animations:Play(track, { BackgroundColor3 = value and theme.Accent or theme.Border }, "quick")
-        animations:Play(knob, { Position = value and UDim2.fromOffset(23, 3) or UDim2.fromOffset(3, 3) }, "quick")
+        animations:Play(knob, {
+            Position = value and UDim2.fromOffset(26, 4) or UDim2.fromOffset(4, 4),
+            BackgroundColor3 = value and theme.Background or theme.Text,
+        }, "quick")
+        animations:Play(trackStroke, {
+            Color = value and theme.Accent or theme.BorderHover,
+            Transparency = value and 0.05 or 0.25,
+        }, "quick")
     end
     render(self.Value:Get())
     self.Maid:Give(self.Value:Subscribe(function(value)
@@ -1472,7 +1559,10 @@ function Root:_create()
     if mode == "2D" then
         container = Instance.new("ScreenGui")
         container.ResetOnSpawn = false
-        container.IgnoreGuiInset = true
+        -- Keep the window below Roblox's top bar and device safe area.
+        -- This matters most on touch devices where the CoreGui controls
+        -- otherwise overlap the draggable header.
+        container.IgnoreGuiInset = false
         container.DisplayOrder = self.Options.DisplayOrder or 20
         container.Parent = playerGui
     else
@@ -1487,7 +1577,7 @@ function Root:_create()
         if mode == "Hybrid" then
             local overlay = Instance.new("ScreenGui")
             overlay.ResetOnSpawn = false
-            overlay.IgnoreGuiInset = true
+            overlay.IgnoreGuiInset = false
             overlay.DisplayOrder = self.Options.DisplayOrder or 20
             overlay.Parent = playerGui
             self._maid:Give(overlay)
@@ -1622,7 +1712,7 @@ local base = {
     Transparency = 0.06,
     Blur = 0,
     AnimationSpeed = 1,
-    ControlHeight = 38,
+    ControlHeight = 42,
 }
 
 local function derive(overrides)
@@ -1654,27 +1744,6 @@ return {
     Glass = derive({ Accent = color("#8DCAFF"), AccentSecondary = color("#D1B7FF"), Transparency = 0.2, Blur = 8 }),
     Minimal = derive({ Accent = color("#FFFFFF"), AccentSecondary = color("#A7B0C5"), Background = color("#121417"), Surface = color("#1B1E23"), Transparency = 0 }),
 }
-
-end
-
-__modules["Utilities.Responsive"] = function(require)
-
-local Responsive = {}
-
-function Responsive.GetBreakpoint(width: number): string
-    if width < 600 then
-        return "Compact"
-    elseif width < 1100 then
-        return "Regular"
-    end
-    return "Wide"
-end
-
-function Responsive.TouchTarget(compact: boolean): number
-    return compact and 44 or 36
-end
-
-return Responsive
 
 end
 

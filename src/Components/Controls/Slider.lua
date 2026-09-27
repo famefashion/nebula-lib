@@ -3,6 +3,7 @@
 local UserInputService = game:GetService("UserInputService")
 local Component = require(script.Parent.Parent.Component)
 local Value = require(script.Parent.Parent.Parent.State.Value)
+local Responsive = require(script.Parent.Parent.Parent.Utilities.Responsive)
 
 local Slider = {}
 Slider.__index = Slider
@@ -15,7 +16,7 @@ function Slider.new(parent: Instance, options: {[string]: any}, theme, animation
     local holder = Instance.new("Frame")
     holder.Name = options.Label or "Slider"
     holder.BackgroundTransparency = 1
-    holder.Size = UDim2.new(1, 0, 0, 54)
+    holder.Size = UDim2.new(1, 0, 0, math.max(theme.ControlHeight + 24, Responsive.TouchTarget(true) + 18))
     holder.Parent = parent
 
     local label = Instance.new("TextLabel")
@@ -24,7 +25,7 @@ function Slider.new(parent: Instance, options: {[string]: any}, theme, animation
     label.Font = Enum.Font.Gotham
     label.Text = options.Label or "Slider"
     label.TextColor3 = theme.TextSecondary
-    label.TextSize = 13
+    label.TextSize = options.TextSize or 14
     label.TextTruncate = Enum.TextTruncate.AtEnd
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = holder
@@ -36,28 +37,29 @@ function Slider.new(parent: Instance, options: {[string]: any}, theme, animation
     readout.TextXAlignment = Enum.TextXAlignment.Right
     readout.Parent = holder
 
-    local rail = Instance.new("Frame")
+    local rail = Instance.new("TextButton")
     rail.AnchorPoint = Vector2.new(0, 0.5)
-    rail.Position = UDim2.new(0, 0, 0, 38)
-    rail.Size = UDim2.new(1, 0, 0, 6)
+    rail.Position = UDim2.new(0, 0, 0, 42)
+    rail.Size = UDim2.new(1, 0, 0, 10)
+    rail.AutoButtonColor = false
+    rail.Text = ""
     rail.BackgroundColor3 = theme.Border
     rail.BorderSizePixel = 0
     rail.Parent = holder
     local railCorner = Instance.new("UICorner")
     railCorner.CornerRadius = UDim.new(1, 0)
     railCorner.Parent = rail
-    local fill = rail:Clone()
+    local fill = Instance.new("Frame")
     fill.Name = "Fill"
+    fill.BorderSizePixel = 0
     fill.BackgroundColor3 = theme.Accent
     fill.Size = UDim2.new((value - min) / math.max(max - min, 1), 0, 1, 0)
     fill.Parent = rail
-    local knob = Instance.new("TextButton")
+    local knob = Instance.new("Frame")
     knob.Name = "Knob"
-    knob.Text = ""
-    knob.AutoButtonColor = false
     knob.AnchorPoint = Vector2.new(0.5, 0.5)
     knob.Position = UDim2.new((value - min) / math.max(max - min, 1), 0, 0.5, 0)
-    knob.Size = UDim2.fromOffset(18, 18)
+    knob.Size = UDim2.fromOffset(26, 26)
     knob.BackgroundColor3 = theme.Text
     knob.BorderSizePixel = 0
     knob.Parent = rail
@@ -87,9 +89,10 @@ function Slider.new(parent: Instance, options: {[string]: any}, theme, animation
             options.OnChanged(nextValue)
         end
     end))
-    self.Maid:Give(knob.InputBegan:Connect(function(input)
+    self.Maid:Give(rail.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
+            update(input.Position.X)
         end
     end))
     self.Maid:Give(UserInputService.InputChanged:Connect(function(input)

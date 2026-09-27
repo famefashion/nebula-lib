@@ -62,22 +62,24 @@ end
 
 function Nebula:_addSettingsTab(window, options)
     local settings = window:AddTab("UI Settings", "⚙")
-    settings:AddText("Built-in display controls for this Nebula window.")
+    settings:AddText("Built into every Nebula window. Use the controls below to adapt the interface to your device.")
 
     local display = settings:AddSurface({
         Title = "Display mode",
-        Size = UDim2.new(1, 0, 0, 142),
     })
+    local adornee = self.Root.Options.Adornee
+    local canUse3D = adornee and adornee:IsA("BasePart")
     display:AddText(
-        options.Adornee
-            and "Switch between a ScreenGui and a SurfaceGui without rebuilding your window."
-            or "2D is active. Pass Adornee = a BasePart to enable 3D surface mode.",
+        canUse3D
+            and "Switch between a ScreenGui and a SurfaceGui without rebuilding this window."
+            or "2D is active. Pass Adornee = a BasePart when creating Nebula to enable 3D mode.",
         { Height = 36, TextSize = 12 }
     )
     local surfaceMode = display:AddToggle({
         Label = "Use 3D surface UI",
-        Default = self.Root.Mode == "3D",
+        Default = self.Root.Mode ~= "2D",
     })
+    window._displayModeToggle = surfaceMode
     surfaceMode:OnChanged(function(enabled)
         if enabled and not self.Root.Options.Adornee then
             surfaceMode:Set(false)
@@ -89,7 +91,6 @@ function Nebula:_addSettingsTab(window, options)
 
     local behavior = settings:AddSurface({
         Title = "Accessibility",
-        Size = UDim2.new(1, 0, 0, 120),
     })
     local reducedMotion = behavior:AddToggle({
         Label = "Reduced motion",
@@ -143,6 +144,11 @@ function Nebula:SetRenderMode(mode: string, options: {[string]: any}?)
     end
     self.Toasts = ToastStack.new(self._root, self:GetTheme(), self.Animations, self.Maid)
     self.Commands = Command.new(self._root, commands, self:GetTheme(), self.Animations, self.Maid)
+    for _, window in ipairs(self._windows) do
+        if window._displayModeToggle then
+            window._displayModeToggle:Set(mode ~= "2D")
+        end
+    end
     self:_applyResponsive()
 end
 

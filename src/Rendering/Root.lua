@@ -46,7 +46,7 @@ function Root:_create()
         container.Face = self.Options.Face or Enum.NormalId.Front
         container.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
         container.PixelsPerStud = self.Options.PixelsPerStud or 50
-        container.Parent = adornee
+        container.Parent = playerGui
         if mode == "Hybrid" then
             overlay = Instance.new("ScreenGui")
             overlay.Name = "NebulaOverlay"

@@ -68,8 +68,7 @@ for _, themeName in ipairs({ "Midnight", "Nebula Dark", "Aurora", "Graphite" }) 
     })
 end
 
-local settings = window:AddSettingsTab(app)
-local diagnostics = window:AddTab("Diagnostics", "⌁")
+local settings = local diagnostics = window:AddTab("Diagnostics", "⌁")
 diagnostics:AddText("Press P to open the command palette. The mode selector keeps 2D, 3D, and Hybrid explicit.", { Height = 46 })
 local reportSurface = diagnostics:AddSurface({ Title = "Runtime" })
 reportSurface:AddButton({

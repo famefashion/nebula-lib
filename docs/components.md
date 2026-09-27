@@ -10,7 +10,7 @@
 
 - `AddButton({ Label, OnClick })`
 - `AddToggle({ Label, Default, OnChanged })`
-- `AddSlider({ Label, Min, Max, Default, Format, OnChanged })`
+- `AddSlider({ Label, Min, Max, Range, Default, Format, OnChanged })`
 
 ## Command palette
 
@@ -34,5 +34,5 @@ Press `P` to open the palette and `Escape` to close it.
 
 Windows reveal on creation, the selected tab settles into place, and buttons respond
 with a short scale lift. For custom motion, use [`app.Animations`](animations.md).
-The generated [`src/Nebula.lua`](../src/Nebula.lua) file is self-contained, so it can
-also be fetched by a compatible loadstring runtime without downloading the module tree.
+The generated [`src/Nebula.lua`](../src/Nebula.lua) file is a standalone loadstring
+package, so it can be fetched without a ModuleScript or the source module tree.

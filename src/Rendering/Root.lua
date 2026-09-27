@@ -10,6 +10,7 @@ function Root.new(mode: string?, options: {[string]: any}, maid)
         Mode = mode or "2D",
         Options = options or {},
         Instance = nil,
+        _overlay = nil,
         _maid = maid,
     }, Root)
     self:_create()
@@ -17,8 +18,13 @@ function Root.new(mode: string?, options: {[string]: any}, maid)
 end
 
 function Root:_create()
-    if self.Instance and self.Instance.Parent then
-        self.Instance:Destroy()
+    local previous = self.Instance
+    local previousOverlay = self._overlay
+    local children = {}
+    if previous and previous.Parent then
+        for _, child in ipairs(previous:GetChildren()) do
+            table.insert(children, child)
+        end
     end
     local playerGui = self.Options.Parent
     local mode = self.Mode
@@ -30,6 +36,7 @@ function Root:_create()
         container.ResetOnSpawn = false
         container.IgnoreGuiInset = true
         container.DisplayOrder = self.Options.DisplayOrder or 20
+        container.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         container.Parent = playerGui
     else
         local adornee = self.Options.Adornee
@@ -39,15 +46,31 @@ function Root:_create()
         container.Face = self.Options.Face or Enum.NormalId.Front
         container.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
         container.PixelsPerStud = self.Options.PixelsPerStud or 50
+        container.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         container.Parent = adornee
         if mode == "Hybrid" then
             local overlay = Instance.new("ScreenGui")
             overlay.ResetOnSpawn = false
             overlay.IgnoreGuiInset = true
             overlay.DisplayOrder = self.Options.DisplayOrder or 20
+            overlay.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
             overlay.Parent = playerGui
+            self._overlay = overlay
             self._maid:Give(overlay)
+        else
+            self._overlay = nil
         end
+    end
+    for _, child in ipairs(children) do
+        if child.Parent == previous then
+            child.Parent = container
+        end
+    end
+    if previous and previous.Parent then
+        previous:Destroy()
+    end
+    if previousOverlay and previousOverlay.Parent then
+        previousOverlay:Destroy()
     end
     self.Instance = container
     self._maid:Give(container)

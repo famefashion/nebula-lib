@@ -13,7 +13,4 @@ app:SetRenderMode("Hybrid", { Adornee = workspace.Terminal.Screen })
 
 `2D` creates a ScreenGui. `3D` creates a SurfaceGui on the supplied BasePart. `Hybrid` creates a SurfaceGui plus a screen overlay for shared app-level UI. Existing components are migrated to the new root when the mode changes.
 
-Every window automatically receives a `UI Settings` tab. When `Nebula.new` was
-given an `Adornee` BasePart, its **Use 3D surface UI** toggle switches between 2D
-and 3D without requiring the caller to rebuild the window. Without an `Adornee`,
-the setting stays available but explains how to enable 3D safely.
+Every window automatically receives a `UI Settings` tab with three mode buttons: **2D**, **3D**, and **Hybrid**. When `Nebula.new` was given an `Adornee` BasePart, selecting 3D or Hybrid animates the current surface away, rebuilds the root in place, and preserves the existing window and tabs. Selecting a non-2D mode without an `Adornee` shows a warning instead of breaking the UI.

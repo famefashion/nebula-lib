@@ -20,7 +20,7 @@ local Responsive = require("Utilities.Responsive")
 
 local Nebula = {}
 Nebula.__index = Nebula
-Nebula.VERSION = "0.1.0"
+Nebula.VERSION = "0.2.0"
 
 function Nebula.new(options: {[string]: any}?)
     options = options or {}
@@ -31,6 +31,8 @@ function Nebula.new(options: {[string]: any}?)
         _componentCount = 0,
         _destroyed = false,
         _windows = {},
+        _renderModeTransitioning = false,
+        _queuedRenderMode = nil,
     }, Nebula)
     self.ThemeManager = Manager.new(options.Theme)
     self.Animations = Animator.new(options.ReducedMotion)
@@ -42,7 +44,7 @@ function Nebula.new(options: {[string]: any}?)
         Face = options.Face,
         PixelsPerStud = options.PixelsPerStud,
         DisplayOrder = options.DisplayOrder,
-    }, self.Maid)
+    }, self.Maid, self.Animations)
     self._root = self.Root.Instance
     self.Toasts = ToastStack.new(self._root, self:GetTheme(), self.Animations, self.Maid)
     self.Commands = Command.new(self._root, options.Commands, self:GetTheme(), self.Animations, self.Maid)
@@ -70,43 +72,34 @@ end
 
 function Nebula:_addSettingsTab(window, options)
     local settings = window:AddTab("UI Settings", "⚙")
-    settings:AddText("Built into every Nebula window. Use the controls below to adapt the interface to your device.")
-
-    local display = settings:AddSurface({
-        Title = "Display mode",
-    })
-    local adornee = self.Root.Options.Adornee
-    local canUse3D = adornee and adornee:IsA("BasePart")
-    display:AddText(
-        canUse3D
-            and "Switch between a ScreenGui and a SurfaceGui without rebuilding this window."
-            or "2D is active. Pass Adornee = a BasePart when creating Nebula to enable 3D mode.",
-        { Height = 36, TextSize = 12 }
-    )
-    local surfaceMode = display:AddToggle({
-        Label = "Use 3D surface UI",
-        Default = self.Root.Mode ~= "2D",
-    })
-    window._displayModeToggle = surfaceMode
-    surfaceMode:OnChanged(function(enabled)
-        if enabled and not self.Root.Options.Adornee then
-            surfaceMode:Set(false)
-            self:Toast("3D mode needs options.Adornee = a BasePart", "warning")
-            return
-        end
-        self:SetRenderMode(enabled and "3D" or "2D")
-    end)
-
-    local behavior = settings:AddSurface({
-        Title = "Accessibility",
-    })
-    local reducedMotion = behavior:AddToggle({
-        Label = "Reduced motion",
-        Default = options.ReducedMotion == true,
-    })
-    reducedMotion:OnChanged(function(enabled)
-        self:SetReducedMotion(enabled)
-    end)
+    settings:AddText("Choose where Nebula renders. The selected mode stays active while the window is rebuilt in place.")
+    local display = settings:AddSurface({ Title = "Display mode" })
+    local modeDefinitions = {
+        { Mode = "2D", Label = "▣  2D · Screen overlay" },
+        { Mode = "3D", Label = "◇  3D · SurfaceGui on a part" },
+        { Mode = "Hybrid", Label = "◈  Hybrid · Surface + screen overlay" },
+    }
+    local modeButtons = {}
+    for _, definition in ipairs(modeDefinitions) do
+        local mode = definition.Mode
+        local button = display:AddButton({
+            Label = definition.Label,
+            OnClick = function()
+                local adornee = self.Root.Options.Adornee
+                if mode ~= "2D" and not (adornee and adornee:IsA("BasePart")) then
+                    self:Toast("3D and Hybrid modes need options.Adornee = a BasePart", "warning")
+                    return
+                end
+                self:SetRenderMode(mode)
+            end,
+        })
+        button:SetSelected(self.Root.Mode == mode)
+        modeButtons[mode] = button
+    end
+    window._displayModeButtons = modeButtons
+    local behavior = settings:AddSurface({ Title = "Accessibility" })
+    local reducedMotion = behavior:AddToggle({ Label = "Reduced motion", Default = options.ReducedMotion == true })
+    reducedMotion:OnChanged(function(enabled) self:SetReducedMotion(enabled) end)
 end
 
 function Nebula:RegisterTheme(name: string, theme: {[string]: any})
@@ -131,33 +124,33 @@ end
 
 function Nebula:SetRenderMode(mode: string, options: {[string]: any}?)
     assert(not self._destroyed, "Cannot change render mode after Nebula:Destroy()")
-    if mode == self.Root.Mode and not options then
+    assert(mode == "2D" or mode == "3D" or mode == "Hybrid", ("Unsupported Nebula render mode: %s"):format(tostring(mode)))
+    if self._renderModeTransitioning then
+        self._queuedRenderMode = { Mode = mode, Options = options }
         return
     end
-    local commands = self.Commands and self.Commands._commands
-    if self.Toasts then
-        self.Toasts:Destroy()
-    end
-    if self.Commands then
-        self.Commands:Destroy()
-    end
-    self.Root:SetMode(mode, options)
-    self._root = self.Root.Instance
-    assert(self._root, "Nebula render root was not created")
-    if self.Toasts then
-        self.Toasts._root = self._root
-    end
-    if self.Commands then
-        self.Commands._root = self._root
-    end
-    self.Toasts = ToastStack.new(self._root, self:GetTheme(), self.Animations, self.Maid)
-    self.Commands = Command.new(self._root, commands, self:GetTheme(), self.Animations, self.Maid)
-    for _, window in ipairs(self._windows) do
-        if window._displayModeToggle then
-            window._displayModeToggle:Set(mode ~= "2D")
+    if mode == self.Root.Mode and not options then return end
+    self._renderModeTransitioning = true
+    local function applyMode()
+        if self._destroyed then return end
+        local commands = self.Commands and self.Commands._commands
+        if self.Toasts then self.Toasts:Destroy() end
+        if self.Commands then self.Commands:Destroy() end
+        self.Root:SetMode(mode, options)
+        self._root = self.Root.Instance
+        assert(self._root, "Nebula render root was not created")
+        self.Toasts = ToastStack.new(self._root, self:GetTheme(), self.Animations, self.Maid)
+        self.Commands = Command.new(self._root, commands, self:GetTheme(), self.Animations, self.Maid)
+        for _, window in ipairs(self._windows) do
+            for buttonMode, button in pairs(window._displayModeButtons or {}) do button:SetSelected(buttonMode == mode) end
         end
+        self:_applyResponsive()
+        self._renderModeTransitioning = false
+        local queued = self._queuedRenderMode
+        self._queuedRenderMode = nil
+        if queued then self:SetRenderMode(queued.Mode, queued.Options) end
     end
-    self:_applyResponsive()
+    if self.Root.Mode ~= "2D" then self.Root:AnimateExit(applyMode) else applyMode() end
 end
 
 function Nebula:SetDebug(enabled: boolean)
@@ -642,6 +635,12 @@ function Window.new(root: Instance, options: {[string]: any}, theme, animations,
     stroke.Color = theme.Border
     stroke.Transparency = 0.12
     stroke.Parent = frame
+    local glow = Instance.new("UIStroke")
+    glow.Name = "NebulaGlow"
+    glow.Color = theme.AccentSecondary
+    glow.Thickness = 4
+    glow.Transparency = 0.88
+    glow.Parent = frame
 
     local header = Instance.new("Frame")
     header.BackgroundTransparency = 1
@@ -838,8 +837,8 @@ function Window:ApplyResponsive(viewportSize: Vector2, breakpoint: string)
     local width
     local height
     if compact then
-        width = math.clamp(math.floor(viewportSize.X * 0.88), 300, 760)
-        height = math.clamp(math.floor(viewportSize.Y * 0.84), 280, 640)
+        width = math.clamp(math.floor(viewportSize.X * 0.92), 280, 720)
+        height = math.clamp(math.floor(viewportSize.Y * 0.78), 300, 560)
     else
         width = math.max(math.min(900, viewportSize.X - 32), 1)
         height = math.max(math.min(620, viewportSize.Y - 48), 1)
@@ -1028,6 +1027,12 @@ function Surface.new(parent: Instance, options: {[string]: any}, theme, animatio
     stroke.Color = theme.Border
     stroke.Transparency = 0.2
     stroke.Parent = frame
+    local glow = Instance.new("UIStroke")
+    glow.Name = "NebulaGlow"
+    glow.Color = theme.AccentSecondary
+    glow.Thickness = 3
+    glow.Transparency = 0.84
+    glow.Parent = frame
 
     local self = Component.new(frame, theme, animations)
     setmetatable(self, Surface)
@@ -1124,24 +1129,37 @@ function Button.new(parent: Instance, options: {[string]: any}, theme, animation
     stroke.Parent = button
     local self = Component.new(button, theme, animations)
     setmetatable(self, Button)
-    animations:Scale(button, 1, "spring")
-
-    self.Maid:Give(button.MouseEnter:Connect(function()
-        animations:Play(button, { BackgroundColor3 = theme.Surface }, "quick")
-        animations:Play(stroke, { Transparency = 0 }, "quick")
-        animations:Scale(button, 1.015, "quick")
-    end))
-    self.Maid:Give(button.MouseLeave:Connect(function()
-        animations:Play(button, { BackgroundColor3 = theme.SurfaceSecondary }, "quick")
-        animations:Play(stroke, { Transparency = 0.15 }, "quick")
-        animations:Scale(button, 1, "quick")
-    end))
-    self.Maid:Give(button.Activated:Connect(function()
-        if options.OnClick then
-            options.OnClick()
-        end
-    end))
+    self._selected = false
+    local hovered = false
+    local function render()
+        local selected = self._selected
+        animations:Play(button, { BackgroundColor3 = selected and theme.Accent or (hovered and theme.Surface or theme.SurfaceSecondary), TextColor3 = selected and theme.Background or theme.Text }, "quick")
+        animations:Play(stroke, { Color = selected and theme.Accent or theme.Border, Transparency = selected and 0.05 or (hovered and 0 or 0.15) }, "quick")
+        animations:Scale(button, selected and 1 or (hovered and 1.015 or 1), "quick")
+    end
+    self.Maid:Give(button.MouseEnter:Connect(function() hovered = true; render() end))
+    self.Maid:Give(button.MouseLeave:Connect(function() hovered = false; render() end))
+    self.Maid:Give(button.Activated:Connect(function() if options.OnClick then options.OnClick() end end))
+    render()
     return self
+end
+
+function Button:SetSelected(selected: boolean)
+    self._selected = selected == true
+    local button = self.Instance
+    if button and button.Parent then
+        local stroke = button:FindFirstChildOfClass("UIStroke")
+        button.BackgroundColor3 = self._selected and self.Theme.Accent or self.Theme.SurfaceSecondary
+        button.TextColor3 = self._selected and self.Theme.Background or self.Theme.Text
+        if stroke then
+            stroke.Color = self._selected and self.Theme.Accent or self.Theme.Border
+            stroke.Transparency = self._selected and 0.05 or 0.15
+        end
+    end
+end
+
+function Button:IsSelected(): boolean
+    return self._selected == true
 end
 
 return Button
@@ -1373,9 +1391,9 @@ __modules["Utilities.Responsive"] = function(require)
 local Responsive = {}
 
 function Responsive.GetBreakpoint(width: number): string
-    if width < 640 then
+    if width < 720 then
         return "Compact"
-    elseif width < 1024 then
+    elseif width < 1100 then
         return "Regular"
     end
     return "Wide"
@@ -1600,11 +1618,13 @@ Root.__index = Root
 
 local modes = { ["2D"] = true, ["3D"] = true, Hybrid = true }
 
-function Root.new(mode: string?, options: {[string]: any}, maid)
+function Root.new(mode: string?, options: {[string]: any}, maid, animations)
     local self = setmetatable({
         Mode = mode or "2D",
         Options = options or {},
         Instance = nil,
+        Overlay = nil,
+        Animations = animations,
         _maid = maid,
     }, Root)
     self:_create()
@@ -1613,23 +1633,21 @@ end
 
 function Root:_create()
     local previous = self.Instance
+    local previousOverlay = self.Overlay
     local preservedChildren = {}
     if previous then
-        for _, child in ipairs(previous:GetChildren()) do
-            table.insert(preservedChildren, child)
-        end
+        for _, child in ipairs(previous:GetChildren()) do table.insert(preservedChildren, child) end
     end
     local playerGui = self.Options.Parent
     local mode = self.Mode
     assert(modes[mode], ("Unsupported Nebula render mode: %s"):format(tostring(mode)))
+    if previousOverlay and previousOverlay.Parent then previousOverlay:Destroy() end
 
     local container: Instance
+    local overlay: ScreenGui? = nil
     if mode == "2D" then
         container = Instance.new("ScreenGui")
         container.ResetOnSpawn = false
-        -- Keep the window below Roblox's top bar and device safe area.
-        -- This matters most on touch devices where the CoreGui controls
-        -- otherwise overlap the draggable header.
         container.IgnoreGuiInset = false
         container.DisplayOrder = self.Options.DisplayOrder or 20
         container.Parent = playerGui
@@ -1643,32 +1661,82 @@ function Root:_create()
         container.PixelsPerStud = self.Options.PixelsPerStud or 50
         container.Parent = adornee
         if mode == "Hybrid" then
-            local overlay = Instance.new("ScreenGui")
+            overlay = Instance.new("ScreenGui")
+            overlay.Name = "NebulaOverlay"
             overlay.ResetOnSpawn = false
             overlay.IgnoreGuiInset = false
-            overlay.DisplayOrder = self.Options.DisplayOrder or 20
+            overlay.DisplayOrder = (self.Options.DisplayOrder or 20) + 1
             overlay.Parent = playerGui
-            self._maid:Give(overlay)
         end
     end
-    for _, child in ipairs(preservedChildren) do
-        child.Parent = container
-    end
-    if previous and previous.Parent then
-        previous:Destroy()
-    end
+    for _, child in ipairs(preservedChildren) do child.Parent = container end
+    if previous and previous.Parent then previous:Destroy() end
     self.Instance = container
+    self.Overlay = overlay
     self._maid:Give(container)
+    if overlay then self._maid:Give(overlay) end
+end
+
+function Root:AnimateExit(callback: () -> ())
+    if self.Mode == "2D" or not self.Instance or not self.Instance.Parent or not self.Animations then
+        callback()
+        return
+    end
+
+    local pending = 0
+    local finished = false
+    local snapshots = {}
+    local function complete()
+        pending -= 1
+        if pending <= 0 and not finished then
+            finished = true
+            for child, snapshot in pairs(snapshots) do
+                if child.Parent then
+                    child.Position = snapshot.Position
+                    child.Rotation = snapshot.Rotation
+                    child.BackgroundTransparency = snapshot.BackgroundTransparency
+                end
+            end
+            callback()
+        end
+    end
+
+    for _, child in ipairs(self.Instance:GetChildren()) do
+        if child:IsA("GuiObject") then
+            pending += 1
+            snapshots[child] = {
+                Position = child.Position,
+                Rotation = child.Rotation,
+                BackgroundTransparency = child.BackgroundTransparency,
+            }
+            local targetPosition = UDim2.new(
+                child.Position.X.Scale,
+                child.Position.X.Offset,
+                child.Position.Y.Scale - 0.35,
+                child.Position.Y.Offset
+            )
+            local tween = self.Animations:Play(child, {
+                Position = targetPosition,
+                Rotation = child.Rotation + 360,
+                BackgroundTransparency = 1,
+            }, "orbit")
+            if tween then
+                self._maid:Give(tween.Completed:Connect(complete))
+            else
+                complete()
+            end
+        end
+    end
+
+    if pending == 0 then
+        callback()
+    end
 end
 
 function Root:SetMode(mode: string, options: {[string]: any}?)
     assert(modes[mode], ("Unsupported Nebula render mode: %s"):format(tostring(mode)))
     self.Mode = mode
-    if options then
-        for key, value in pairs(options) do
-            self.Options[key] = value
-        end
-    end
+    if options then for key, value in pairs(options) do self.Options[key] = value end end
     self:_create()
 end
 
